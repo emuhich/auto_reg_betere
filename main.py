@@ -59,6 +59,7 @@ def bad_number(idNum):
     }
     status = requests.get('https://vak-sms.com/api/setStatus/?apiKey={apiKey}&status={status}&idNum={idNum}',
                           params=params).json()
+    print(f"Номер {idNum} был отменен")
     if status['status'] == 'smsReceived':
         raise Exception("Ошибка отмены номера: на данный номер уже получен код подтверждения, отмена невозможна.")
     elif status['status'] == 'waitSMS':
@@ -101,18 +102,18 @@ def password_generate():
     return password
 
 
-def registration(phone):
+def registration(phone, acc):
     """Регистрация bettery."""
     # Регистрация этап 1
     global code
     idNum = phone['idNum']
     phone_number = str(phone['tel'])
-    date_of_birth = '13.11.1988'
+    date_of_birth = acc['date_of_birth']
     password = password_generate()
-    name = 'Дарья'
-    surnames = 'Лобанова'
-    patronymic = 'Андреевна'
-    passport = '4608470433'
+    name = acc['name']
+    surnames = acc['surnames']
+    patronymic = acc['patronymic']
+    passport = acc['passport']
     options = webdriver.ChromeOptions()
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
@@ -120,26 +121,22 @@ def registration(phone):
     phone_input = driver.find_element(By.XPATH,
                                       '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
     phone_input.send_keys(phone_number[2:])
-    time.sleep(2)
     date_input = driver.find_element(By.XPATH,
                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[2]/label/div[2]/input')
     date_input.click()
     date_input.send_keys(date_of_birth)
-    time.sleep(1)
     password_input = driver.find_element(By.XPATH,
                                          '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[3]/label/div[2]/input')
     password_input.send_keys(password)
-    time.sleep(1)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[2]/div/div/input').click()
-    time.sleep(1)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div').click()
     now = datetime.now()
     check = False
     while True:
         next = datetime.now() - now
-        if next.seconds == 300:
+        if next.seconds >= 60:
             break
         code = get_sms_code(idNum)['smsCode']
         if code is None:
@@ -147,6 +144,7 @@ def registration(phone):
         else:
             check = True
             break
+    time.sleep(5)
     while True:
         if not check:
             bad_number(idNum)
@@ -156,13 +154,21 @@ def registration(phone):
             driver.find_element(By.XPATH,
                                 '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div[1]/div[2]/div[1]/a/div/span').click()
             time.sleep(2)
+            driver.refresh()
             phone_input = driver.find_element(By.XPATH,
                                               '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
-            time.sleep(2)
-            phone_input.clear()
-            time.sleep(2)
             phone_input.send_keys(phone_number[2:])
-            time.sleep(1)
+
+            date_input = driver.find_element(By.XPATH,
+                                             '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[2]/label/div[2]/input')
+            date_input.click()
+            date_input.send_keys(date_of_birth)
+            password_input = driver.find_element(By.XPATH,
+                                                 '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[3]/label/div[2]/input')
+            password_input.send_keys(password)
+            driver.find_element(By.XPATH,
+                                '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[2]/div/div/input').click()
+
             driver.find_element(By.XPATH,
                                 '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div/button/div/span').click()
             now = datetime.now()
@@ -191,31 +197,25 @@ def registration(phone):
                                          '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
     surnames_input.click()
     surnames_input.send_keys(surnames)
-    time.sleep(2)
     name_input = driver.find_element(By.XPATH,
                                      '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[2]/label/div[2]/input')
     name_input.click()
     name_input.send_keys(name)
-    time.sleep(2)
     patronymic_input = driver.find_element(By.XPATH,
                                            '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[3]/label[2]/div[2]/input')
     patronymic_input.click()
     patronymic_input.send_keys(patronymic)
-    time.sleep(2)
     passport_input = driver.find_element(By.XPATH,
                                          '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[5]/label/div[2]/input')
     passport_input.click()
     passport_input.send_keys(passport)
-    time.sleep(3)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[6]/div[2]/div/div').click()
     time.sleep(8)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[7]/div/div[1]/div').click()
-    time.sleep(2)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[3]/div[1]/a/div/span').click()
-    time.sleep(2)
     while True:
         soup = BeautifulSoup(driver.page_source, 'lxml')
         complete = soup.find_all("div", class_="verification__complete--q2ezc")
@@ -318,11 +318,13 @@ def registration_liga(acc):
         if complete:
             break
 
-    while True:
-        soup = BeautifulSoup(driver.page_source, 'lxml')
-        complete = soup.find_all("div", class_="fortune-popup__wrapper-66fb7c")
-        if complete:
-            break
+    time.sleep(180)
+
+    # while True:
+    #     soup = BeautifulSoup(driver.page_source, 'lxml')
+    #     complete = soup.find_all("div", class_="fortune-popup__wrapper-66fb7c")
+    #     if complete:
+    #         break
 
     driver.get('https://www.ligastavok.ru/promo/fortune')
     time.sleep(5)
@@ -331,16 +333,18 @@ def registration_liga(acc):
     driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/button').click()
     time.sleep(15)
     driver.close()
-    account = {"acc2": {'phone_number': phone_number,
-                        'idNum': idNum,
-                        'date_of_birth': date_of_birth,
-                        'password': password}
-
-               }
-    b = json.load(open('result.json'))
-    b.update(account)
-    print(b)
-    json.dump(b, open('result.json', 'w'))
+    string = f"Номер: {phone_number},пароль: {password}, id номера VAC sms : {idNum}\n"
+    with open('total.txt', 'a', encoding="UTF8") as f:
+        f.write(string)
+    # account = {"acc2": {'phone_number': phone_number,
+    #                     'idNum': idNum,
+    #                     'date_of_birth': date_of_birth,
+    #                     'password': password}
+    #
+    #            }
+    # b = json.load(open('result.json'))
+    # b.update(account)
+    # json.dump(b, open('result.json', 'w'))
 
 
 def chek_nalog():
@@ -404,7 +408,8 @@ def test_write(acc):
     # json.dump(b, open('result.json', 'w'))
 
 
-def test_open():
+def parse_txt_acc():
+    """Достаем данные из текстовика."""
     with open('result.txt', encoding='utf-8') as f:
         lines = f.readlines()
 
@@ -424,30 +429,123 @@ def test_open():
     patronymic = parts[2]
     date_of_birth = parts[5]
     passport = ps.replace(' ', '')
-    print(f'1: {name}')
-    print(f'2: {surnames}')
-    print(f'3: {patronymic}')
-    print(f'4: {date_of_birth}')
-    print(f'5: {passport}')
+    acc = {'date_of_birth': date_of_birth,
+           'passport': passport,
+           'patronymic': patronymic,
+           'name': name,
+           'surnames': surnames,
+           }
+    return acc
+
+
+def test_bettery_inn():
+    login = '+79062454866'
+    password = '123987Egor'
+    date_of_birth = '13.11.1988'
+    name = 'Дарья'
+    surnames = 'Лобанова'
+    patronymic = 'Андреевна'
+    passport = '4608470433'
+    options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
+    driver.maximize_window()
+    driver.get('https://www.bettery.ru/')
+    time.sleep(5)
+    driver.find_element(By.XPATH,
+                        '/html/body/div[1]/div/header/div[2]/div/div[3]/div/a[1]').click()
+    time.sleep(2)
+    login_input = driver.find_element(By.XPATH,
+                                      '/html/body/div[4]/div/div/div[2]/form/div[1]/label/div/input')
+    login_input.click()
+    time.sleep(1)
+    login_input.clear()
+    time.sleep(1)
+    login_input.send_keys(login)
+    time.sleep(1)
+    password_input = driver.find_element(By.XPATH,
+                                         '/html/body/div[4]/div/div/div[2]/form/div[2]/label/div/input')
+    password_input.click()
+    time.sleep(1)
+    password_input.clear()
+    time.sleep(1)
+    password_input.send_keys(password)
+    time.sleep(1)
+    driver.find_element(By.XPATH,
+                        '/html/body/div[4]/div/div/div[2]/form/div[3]/div[2]/div/button').click()
+    time.sleep(5)
+    driver.get('https://www.bettery.ru/account/verification/super/passport/')
+    time.sleep(5)
+
+    # заполнение формы
+    test = 1
+    while test <= 2:
+        surnames_input = driver.find_element(By.XPATH,
+                                             '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
+        surnames_input.click()
+        # time.sleep(1)
+        surnames_input.clear()
+        # time.sleep(1)
+        surnames_input.send_keys(surnames)
+        name_input = driver.find_element(By.XPATH,
+                                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[2]/label/div[2]/input')
+        name_input.click()
+        # time.sleep(1)
+        name_input.clear()
+        # time.sleep(1)
+        name_input.send_keys(name)
+        patronymic_input = driver.find_element(By.XPATH,
+                                               '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[3]/label[2]/div[2]/input')
+        patronymic_input.click()
+        # time.sleep(1)
+        patronymic_input.clear()
+        # time.sleep(1)
+        patronymic_input.send_keys(patronymic)
+        passport_input = driver.find_element(By.XPATH,
+                                             '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[5]/label/div[2]/input')
+        passport_input.click()
+        # time.sleep(1)
+        passport_input.send_keys("\b\b\b\b\b\b\b\b\b\b")
+        # time.sleep(1)
+
+        passport_input.send_keys(passport)
+        date_input = driver.find_element(By.XPATH,
+                                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[4]/label/div[2]/input')
+        date_input.click()
+        # time.sleep(1)
+        date_input.clear()
+        # time.sleep(1)
+        date_input.send_keys(date_of_birth)
+        # time.sleep(3)
+        driver.find_element(By.XPATH,
+                            '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[6]/div[2]/div/div').click()
+        time.sleep(7)
+        inn_input = driver.find_element(By.XPATH,
+                                        '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[6]/div[2]/div/label/div[1]/input')
+        inn = inn_input.get_attribute("value")
+        print(inn)
+        test += 1
 
 
 def main():
-    # try:
-    #     # chek_nalog()
-    #     phone = get_phone()
-    #     account = registration(phone)
-    #     registration_liga(account)
-    # except Exception as error:
-    #     logging.error(error)
+    try:
+        # chek_nalog()
+        acc = parse_txt_acc()
+        phone = get_phone()
+        account = registration(phone, acc)
+        registration_liga(account)
+    except Exception as error:
+        logging.error(error)
+    # test_bettery_inn()
 
-    # test_2()
-    test_open()
 
-    # acc = {"acc2": {'phone_number': '79617973671', 'idNum': '1645543310741953', 'date_of_birth': '15.01.1981',
-    #                 'password': '123987Egor',
-    #                 'passport': '4606556721'}}
-    # test_write(acc)
-    # registration_liga(acc)
+# test_2()
+# test_open()
+
+# acc = {"acc2": {'phone_number': '79617973671', 'idNum': '1645543310741953', 'date_of_birth': '15.01.1981',
+#                 'password': '123987Egor',
+#                 'passport': '4606556721'}}
+# test_write(acc)
+# registration_liga(acc)
 
 
 if __name__ == '__main__':
