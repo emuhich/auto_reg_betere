@@ -134,9 +134,14 @@ def registration(phone, acc):
                         '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div').click()
     now = datetime.now()
     check = False
+    click = False
     while True:
         next = datetime.now() - now
-        if next.seconds >= 60:
+        if next.seconds >= 60 and click is False:
+            driver.find_element(By.XPATH,
+                                '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div[1]/div[2]/div[2]/a/div/span').click()
+            click = True
+        if next.seconds >= 120:
             break
         code = get_sms_code(idNum)['smsCode']
         if code is None:
@@ -212,6 +217,16 @@ def registration(phone, acc):
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[6]/div[2]/div/div').click()
     time.sleep(8)
+    inn_input = driver.find_element(By.XPATH,
+                                    '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[6]/div[2]/div/label/div[1]/input')
+    inn = inn_input.get_attribute("value")
+    if inn == '':
+        inn = suggest_inn(surname=surnames, name=name, patronymic=patronymic, birthdate=date_of_birth,
+                          docnumber=passport, doctype='21')
+        inn_input.click()
+        inn_input.clear()
+        inn_input.send_keys(inn)
+
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[7]/div/div[1]/div').click()
     driver.find_element(By.XPATH,
@@ -318,13 +333,13 @@ def registration_liga(acc):
         if complete:
             break
 
-    time.sleep(180)
-
-    # while True:
-    #     soup = BeautifulSoup(driver.page_source, 'lxml')
-    #     complete = soup.find_all("div", class_="fortune-popup__wrapper-66fb7c")
-    #     if complete:
-    #         break
+    while True:
+        driver.refresh()
+        soup = BeautifulSoup(driver.page_source, 'lxml')
+        complete = soup.find_all("div", class_="fortune-popup__wrapper-66fb7c")
+        time.sleep(5)
+        if complete:
+            break
 
     driver.get('https://www.ligastavok.ru/promo/fortune')
     time.sleep(5)
@@ -361,6 +376,14 @@ def chek_nalog():
 
 
 def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
+    """Получаем инн."""
+    docnumber = f'{docnumber[:2]} {docnumber[2:4]} {docnumber[4:10]}'
+    print(docnumber)
+    print(name)
+    print(surname)
+    print(patronymic)
+    print(docnumber)
+    print(birthdate)
     url = "https://service.nalog.ru/inn-proc.do"
     data = {
         "fam": surname,
@@ -376,17 +399,18 @@ def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
     }
     resp = requests.post(url=url, data=data)
     resp.raise_for_status()
-    return resp.json()
+    inn = resp.json()
+    return inn['inn']
 
 
 def test_2():
     response = suggest_inn(
-        surname="Воронова",
-        name="Нина",
-        patronymic="Ивановна",
-        birthdate="29.08.1940",
+        surname="Шишкина",
+        name="Яна",
+        patronymic="Александровна",
+        birthdate="22.07.1988",
         doctype="21",
-        docnumber="40 10 146405",
+        docnumber="3215610309",
     )
     print(response)
 
@@ -426,7 +450,7 @@ def parse_txt_acc():
 
     name = parts[1]
     surnames = parts[0]
-    patronymic = parts[2]
+    patronymic = parts[2].replace(',', '')
     date_of_birth = parts[5]
     passport = ps.replace(' ', '')
     acc = {'date_of_birth': date_of_birth,
@@ -536,6 +560,7 @@ def main():
     except Exception as error:
         logging.error(error)
     # test_bettery_inn()
+    # test_2()
 
 
 # test_2()
