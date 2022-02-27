@@ -63,7 +63,6 @@ def bad_number(idNum):
     }
     status = requests.get('https://vak-sms.com/api/setStatus/?apiKey={apiKey}&status={status}&idNum={idNum}',
                           params=params).json()
-    print(f"Номер {idNum} был отменен")
     if status['status'] == 'smsReceived':
         raise Exception("Ошибка отмены номера: на данный номер уже получен код подтверждения, отмена невозможна.")
     elif status['status'] == 'waitSMS':
@@ -183,9 +182,14 @@ def registration(phone):
             driver.find_element(By.XPATH,
                                 '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div/button/div/span').click()
             now = datetime.now()
+            click = False
             while True:
                 next = datetime.now() - now
-                if next.seconds == 300:
+                if next.seconds >= 60 and click is False:
+                    driver.find_element(By.XPATH,
+                                        '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div[1]/div[2]/div[2]/a/div/span').click()
+                    click = True
+                if next.seconds >= 120:
                     break
                 code = get_sms_code(idNum)['smsCode']
                 if code is None:
@@ -309,20 +313,26 @@ def registration_liga(acc):
     driver.find_element(By.XPATH,
                         '/html/body/div[1]/div[3]/div/div/div/div/form/div[6]/button/span').click()
     now = datetime.now()
-    # verif = False
+    verify = False
+    fail = False
     while True:
         next = datetime.now() - now
-        if next.seconds == 500:
+        if next.seconds > 160:
             break
         soup = BeautifulSoup(driver.page_source, 'lxml')
         complete = soup.find_all("div", class_="simple-id-notification-a011c3")
         if complete:
-            # verif = True
+            verify = True
             break
-    now = datetime.now().strftime("%d/%m/%y %I:%M:%S")
-    string = f"Номер: {phone_number},пароль: {password}, id номера VAC sms : {idNum}, Регистрация без колеса, время: {now}\n"
-    with open('total.txt', 'a', encoding="UTF8") as f:
-        f.write(string)
+
+    driver.close()
+    if verify is True:
+        now = datetime.now().strftime("%d/%m/%y %I:%M:%S")
+        string = f"Номер: {phone_number},пароль: {password}, id номера VAC sms : {idNum}, Регистрация без колеса, время: {now}\n"
+        with open('total.txt', 'a', encoding="UTF8") as f:
+            f.write(string)
+    else:
+        print("Аккаунт уже был использован")
     # if verif is True:
     #     time.sleep(120)
     #     driver.get('https://www.ligastavok.ru/promo/fortune')
@@ -461,9 +471,10 @@ class NoDaemonProcessPool(Pool):
 
 
 def main():
-    count = ['1', '2']
+    # count = ['1', '2', '3', '4']
+    count = ['1']
     try:
-        p = NoDaemonProcessPool(processes=2)
+        p = NoDaemonProcessPool(processes=1)
         p.map(start, count)
     except Exception as error:
         logging.error(error)
