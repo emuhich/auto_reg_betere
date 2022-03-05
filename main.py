@@ -30,7 +30,8 @@ def get_phone(count):
         'apiKey': VAC_TOKEN,
         'service': 'cp',
         'country': 'ru',
-        'operator': 'mtt'
+        'operator': 'mtt',
+        'softId': 1025
     }
     phone_count = requests.get('https://vak-sms.com/api/getCountNumber/', params=params)
     value = phone_count.json()
@@ -40,7 +41,8 @@ def get_phone(count):
             'service': 'cp',
             'country': 'ru',
             'operator': 'mtt',
-            'rent': True
+            'rent': True,
+            'softId': 1025
         }
     phone = requests.get('https://vak-sms.com/api/getNumber/', params=params)
     return phone.json()
