@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
+from auto_wheel import wheel
 from chromedriver.locate import DRIVER_DIR
 
 load_dotenv()
@@ -25,10 +26,6 @@ VAC_TOKEN = os.getenv("VAC_SMS_TOKEN")
 
 def get_phone(count):
     """Покупка номера на VAC sms."""
-    if int(count) > 1:
-        time.sleep(2)
-    if not check_balance():
-        raise Exception("Не хватает дененг на Vac-Sms")
     params = {
         'apiKey': VAC_TOKEN,
         'service': 'cp',
@@ -37,19 +34,36 @@ def get_phone(count):
     }
     phone_count = requests.get('https://vak-sms.com/api/getCountNumber/', params=params)
     value = phone_count.json()
-    if int(value['cp']) < 0:
-        raise Exception("Кончились номера на Vac-Sms")
+    if int(value['cp']) < 20:
+        params = {
+            'apiKey': VAC_TOKEN,
+            'service': 'cp',
+            'country': 'ru',
+            'operator': 'mtt',
+            'rent': True
+        }
     phone = requests.get('https://vak-sms.com/api/getNumber/', params=params)
     return phone.json()
 
 
-def check_balance():
+def check_balance(count):
     """Проверка баланса VAC sms."""
+    summ = 10
+    params = {
+        'apiKey': VAC_TOKEN,
+        'service': 'cp',
+        'country': 'ru',
+        'operator': 'mtt'
+    }
+    phone_count = requests.get('https://vak-sms.com/api/getCountNumber/', params=params)
+    value = phone_count.json()
+    if int(value['cp']) < 20:
+        summ = 25
     params = {
         'apiKey': VAC_TOKEN,
     }
     balance = requests.get('https://vak-sms.com/api/getBalance', params=params).json()
-    if int(balance['balance']) < 10:
+    if int(balance['balance']) < summ * count:
         return False
     return True
 
@@ -96,22 +110,20 @@ def get_sms_code(idNum):
 
 def password_generate():
     """Генератор пароля."""
-    chars = '+-/*!&$#?=@<>abcdefghijklnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
+    chars = 'abcdefghijklnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
     length = 8
     password = ''
     for i in range(length):
         password += random.choice(chars)
     password += str(random.randrange(0, 9))
+    password += 'Z'
     return password
 
 
-def registration(phone):
+def registration(acc):
     """Регистрация bettery."""
     # Регистрация этап 1
-    acc = parse_txt_acc()
     global code
-    idNum = phone['idNum']
-    phone_number = str(phone['tel'])
     date_of_birth = acc['date_of_birth']
     password = password_generate()
     name = acc['name']
@@ -119,7 +131,19 @@ def registration(phone):
     patronymic = acc['patronymic']
     passport = acc['passport']
     inn = acc['inn']
+    idNum = acc['idNum']
+    phone_number = str(acc['tel'])
     options = webdriver.ChromeOptions()
+    options.add_argument('--disable-gpu')
+    options.add_experimental_option(
+        'prefs',
+        {
+            'profile.managed_default_content_settings.images': 2,
+            'profile.managed_default_content_settings.mixed_script': 2,
+            'profile.managed_default_content_settings.media_stream': 2,
+            'profile.managed_default_content_settings.stylesheets': 2
+        }
+    )
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
     time.sleep(5)
@@ -149,16 +173,14 @@ def registration(phone):
         if next.seconds >= 120:
             break
         code = get_sms_code(idNum)['smsCode']
-        if code is None:
-            time.sleep(3)
-        else:
+        if code is not None:
             check = True
             break
-    time.sleep(5)
+        time.sleep(2)
     while True:
         if not check:
             bad_number(idNum)
-            phone = get_phone(count='1')
+            phone = get_phone(1)
             idNum = phone['idNum']
             phone_number = str(phone['tel'])
             driver.find_element(By.XPATH,
@@ -192,11 +214,10 @@ def registration(phone):
                 if next.seconds >= 120:
                     break
                 code = get_sms_code(idNum)['smsCode']
-                if code is None:
-                    time.sleep(3)
-                else:
+                if code is not None:
                     check = True
                     break
+                time.sleep(1)
         break
 
     code_input = driver.find_element(By.XPATH,
@@ -205,7 +226,7 @@ def registration(phone):
     time.sleep(2)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div[2]/div/button/div/span').click()
-    time.sleep(4)
+    time.sleep(6)
 
     # Регистрация этап 2
     surnames_input = driver.find_element(By.XPATH,
@@ -238,7 +259,7 @@ def registration(phone):
 
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[7]/div/div[1]/div').click()
-    time.sleep(1)
+    time.sleep(2)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[3]/div[1]/a/div/span').click()
     while True:
@@ -249,7 +270,7 @@ def registration(phone):
         error = soup.find_all("div", class_="verification__error--3hIEg")
         if error:
             raise Exception("Аккаунт уже был зарегестрирован")
-
+    driver.close()
     account = {
         'phone_number': phone_number,
         'idNum': idNum,
@@ -274,12 +295,14 @@ def registration_liga(acc):
 
     options = uc.ChromeOptions()
     options.add_argument('--incognito')
+    options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
+    options.add_argument('--disable-gpu')
     driver = uc.Chrome(options=options)
-
     driver.get('https://www.ligastavok.ru/registration')
-    time.sleep(5)
+    time.sleep(3)
     phone_input = driver.find_element(By.XPATH,
                                       '/html/body/div[1]/div[3]/div/div/div/div/form/div[1]/div/input')
+    time.sleep(1)
     phone_input.send_keys(phone_number[1:])
     time.sleep(1)
     driver.find_element(By.XPATH,
@@ -287,10 +310,9 @@ def registration_liga(acc):
 
     while True:
         code = get_sms_code(idNum)['smsCode']
-        if code is None:
-            time.sleep(3)
-        else:
+        if code is not None:
             break
+        time.sleep(1)
 
     code_input = driver.find_element(By.XPATH,
                                      '/html/body/div[1]/div[3]/div/div/div/div/form/div[2]/div/input')
@@ -304,20 +326,29 @@ def registration_liga(acc):
                                      '/html/body/div[1]/div[3]/div/div/div/div/form/div[1]/div[1]/input')
     date_input.click()
     date_input.send_keys(date_of_birth)
-    password_input = driver.find_element(By.XPATH,
-                                         '/html/body/div[1]/div[3]/div/div/div/div/form/div[3]/div[1]/input')
-    password_input.send_keys(password)
     country_input = driver.find_element(By.XPATH,
                                         '/html/body/div[1]/div[3]/div/div/div/div/form/div[2]/div/div[2]/input')
     country_input.send_keys('Россия')
-    driver.find_element(By.XPATH,
-                        '/html/body/div[1]/div[3]/div/div/div/div/form/div[6]/button/span').click()
+    password_input = driver.find_element(By.XPATH,
+                                         '/html/body/div[1]/div[3]/div/div/div/div/form/div[3]/div[1]/input')
+    password_input.click()
+    password_input.send_keys(password)
+    time.sleep(1)
+
+    try:
+        regestr = driver.find_element(By.XPATH,
+                                      '/html/body/div[1]/div[3]/div/div/div/div/form/div[6]/button/span')
+        driver.execute_script("arguments[0].click();", regestr)
+    except:
+        time.sleep(1)
+        regestr = driver.find_element(By.XPATH,
+                                      '/html/body/div[1]/div[3]/div/div/div/div/form/div[6]/button/span')
+        driver.execute_script("arguments[0].click();", regestr)
     now = datetime.now()
     verify = False
-    fail = False
     while True:
         next = datetime.now() - now
-        if next.seconds > 160:
+        if next.seconds > 70:
             break
         soup = BeautifulSoup(driver.page_source, 'lxml')
         complete = soup.find_all("div", class_="simple-id-notification-a011c3")
@@ -327,8 +358,7 @@ def registration_liga(acc):
 
     driver.close()
     if verify is True:
-        now = datetime.now().strftime("%d/%m/%y %I:%M:%S")
-        string = f"Номер: {phone_number},пароль: {password}, id номера VAC sms : {idNum}, Регистрация без колеса, время: {now}\n"
+        string = f"{phone_number[1:]}:{password}\n"
         with open('total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
     else:
@@ -382,10 +412,16 @@ def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
         "captcha": "",
         "captchaToken": "",
     }
-    resp = requests.post(url=url, data=data)
-    resp.raise_for_status()
-    inn = resp.json()
-    return inn['inn']
+    try:
+        resp = requests.post(url=url, data=data)
+        resp.raise_for_status()
+        inn = resp.json()
+        inn = inn['inn']
+    except:
+        logging.error("Ошибка при выдачи инн")
+        inn = False
+        return inn
+    return inn
 
 
 def test_2():
@@ -412,41 +448,55 @@ def test_write(acc):
     json.dump(b, open('result.json', 'w'))
 
 
-def parse_txt_acc():
+def parse_txt_acc(count):
     """Достаем данные из текстовика."""
-    with open('result.txt', encoding='utf-8') as f:
-        lines = f.readlines()
+    acc_list = []
+    for i in range(0, count):
+        try:
+            if not check_balance(count):
+                raise Exception("Не хватает дененг на Vac-Sms")
+            with open('result.txt', encoding='utf-8') as f:
+                lines = f.readlines()
 
-    str = lines[0]
-    pattern = re.compile(re.escape(str))
-    with open('result.txt', 'w', encoding='utf-8') as f:
-        for line in lines:
-            result = pattern.search(line)
-            if result is None:
-                f.write(line)
+            str = lines[0]
+            pattern = re.compile(re.escape(str))
+            with open('result.txt', 'w', encoding='utf-8') as f:
+                for line in lines:
+                    result = pattern.search(line)
+                    if result is None:
+                        f.write(line)
+        except:
+            raise Exception("Кончились строки")
 
-    parts = str.split(' ', )
-    ps = str.split(',')[3]
+        parts = str.split(' ', )
+        ps = str.split(',')[3]
 
-    name = parts[1]
-    surnames = parts[0]
-    patronymic = parts[2].replace(',', '')
-    date_of_birth = parts[5].replace(',', '')
-    passport = ps.replace(' ', '')
-    inn = suggest_inn(surnames, name, patronymic, date_of_birth, '21', passport)
-    acc = {'date_of_birth': date_of_birth,
-           'passport': passport,
-           'patronymic': patronymic,
-           'name': name,
-           'surnames': surnames,
-           'inn': inn
-           }
-    return acc
+        name = parts[1]
+        surnames = parts[0]
+        patronymic = parts[2].replace(',', '')
+        date_of_birth = parts[5].replace(',', '')
+        passport = ps.replace(' ', '')
+        inn = suggest_inn(surnames, name, patronymic, date_of_birth, '21', passport)
+        if inn is not False:
+            phone = get_phone(count)
+            tel = phone['tel']
+            idNum = phone['idNum']
+            acc = {'date_of_birth': date_of_birth,
+                   'passport': passport,
+                   'patronymic': patronymic,
+                   'name': name,
+                   'surnames': surnames,
+                   'inn': inn,
+                   'tel': tel,
+                   'idNum': idNum,
+                   'number_process': count + 1
+                   }
+            acc_list.append(acc)
+    return acc_list
 
 
-def start(count):
-    phone = get_phone(count)
-    account = registration(phone)
+def start(acc):
+    account = registration(acc)
     registration_liga(account)
 
 
@@ -470,14 +520,50 @@ class NoDaemonProcessPool(Pool):
         return proc
 
 
+def generate_data(count):
+    data = []
+    for i in range(1, count):
+        data.append(f'{str(i)}')
+
+    return data
+
+
+def get_count_result():
+    with open('result.txt', 'r', encoding='utf-8') as file:
+        for idx, val in enumerate(file):
+            i = idx + 1
+        return i
+
+
 def main():
-    # count = ['1', '2', '3', '4']
-    count = ['1']
-    try:
-        p = NoDaemonProcessPool(processes=1)
-        p.map(start, count)
-    except Exception as error:
-        logging.error(error)
+    print(f"Выберите пункт.\n"
+          f"1.Создать аккаунты.\n"
+          f"2.Прокрутить колесо")
+    munu = input()
+    if munu == '1':
+        try:
+            string_count = get_count_result()
+        except UnboundLocalError:
+            logging.error('Пустой файл result.txt')
+        else:
+            print(f"Введите количество аккаунтов которое хотите сделать. Не больше {string_count}.")
+            while True:
+                count = input()
+                if int(count) > string_count:
+                    print(f"Вы не можете сделать аккаунтов больше чем строк!!!. Максимально: {string_count}")
+                else:
+                    break
+            count = int(count)
+            data = parse_txt_acc(count)
+            try:
+                p = NoDaemonProcessPool(processes=2)
+                p.map(start, data)
+            except Exception as error:
+                logging.error(error)
+
+    elif munu == '2':
+        print("Начало прокрутки, все аккаунты беруться из файла total.txt")
+        wheel()
 
 
 if __name__ == '__main__':
