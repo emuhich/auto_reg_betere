@@ -367,24 +367,6 @@ def registration_liga(acc):
             f.write(string)
     else:
         print("Аккаунт уже был использован")
-    # if verif is True:
-    #     time.sleep(120)
-    #     driver.get('https://www.ligastavok.ru/promo/fortune')
-    #     time.sleep(5)
-    #     d = driver.find_element(By.TAG_NAME, 'iframe')
-    #     driver.switch_to.frame(d)
-    #     driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/button').click()
-    #     time.sleep(15)
-    #     driver.close()
-    #     now = datetime.now().strftime("%d/%m/%y %I:%M:%S")
-    #     string = f"Номер: {phone_number},пароль: {password}, id номера VAC sms : {idNum}, время: {now}\n"
-    #     with open('total.txt', 'a', encoding="UTF8") as f:
-    #         f.write(string)
-    # else:
-    #     now = datetime.now().strftime("%d/%m/%y %I:%M:%S")
-    #     string = f"Номер: {phone_number},пароль: {password}, id номера VAC sms : {idNum}. Регистрация без колеса, время: {now}\n"
-    #     with open('total.txt', 'a', encoding="UTF8") as f:
-    #         f.write(string)
 
 
 def chek_nalog():
@@ -426,18 +408,6 @@ def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
         inn = False
         return inn
     return inn
-
-
-def test_2():
-    response = suggest_inn(
-        surname="Шишкина",
-        name="Яна",
-        patronymic="Александровна",
-        birthdate="22.07.1988",
-        doctype="21",
-        docnumber="3215610309",
-    )
-    print(response)
 
 
 def test_write(acc):
