@@ -135,6 +135,7 @@ def registration(acc):
     phone_number = str(acc['tel'])
     options = webdriver.ChromeOptions()
     options.add_argument('--disable-gpu')
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
     options.add_experimental_option(
         'prefs',
         {
@@ -298,6 +299,7 @@ def registration_liga(acc):
     options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
     options.add_argument('--disable-gpu')
     driver = uc.Chrome(options=options)
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
     driver.get('https://www.ligastavok.ru/registration')
     time.sleep(3)
     phone_input = driver.find_element(By.XPATH,
