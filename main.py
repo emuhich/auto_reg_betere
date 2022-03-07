@@ -1,12 +1,10 @@
 import json
 import logging
-import multiprocessing
 import os
 import random
 import re
 import time
 from datetime import datetime
-from multiprocessing.pool import Pool
 from urllib.request import urlopen
 
 import requests as requests
@@ -16,6 +14,7 @@ from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
+from ProcessPool import NoDaemonProcessPool
 from auto_wheel import wheel
 from chromedriver.locate import DRIVER_DIR
 from league_spacer import start_spacer
@@ -448,6 +447,27 @@ def test_write(acc):
     json.dump(b, open('result.json', 'w'))
 
 
+def log():
+    file_log = logging.FileHandler('bot_log.log', encoding='utf8')
+    console_out = logging.StreamHandler()
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s, %(levelname)s, %(message)s',
+        handlers=(file_log, console_out),
+    )
+
+    logging.getLogger('undetected_chromedriver').setLevel('CRITICAL')
+    logging.getLogger('selenium').setLevel('CRITICAL')
+    logging.getLogger('asyncio').setLevel('CRITICAL')
+    logging.getLogger('uc').setLevel('CRITICAL')
+    logging.getLogger('concurrent').setLevel('CRITICAL')
+    logging.getLogger('requests').setLevel('CRITICAL')
+    logging.getLogger('socks').setLevel('CRITICAL')
+    logging.getLogger('charset_normalizer').setLevel('CRITICAL')
+    logging.getLogger('urllib3').setLevel('CRITICAL')
+    logging.getLogger('dotenv').setLevel('CRITICAL')
+
+
 def parse_txt_acc(count):
     """Достаем данные из текстовика."""
     logging.debug(f'Резервируем номера количество: {count}')
@@ -503,26 +523,6 @@ def start(acc):
     registration_liga(account)
 
 
-class NoDaemonProcess(multiprocessing.Process):
-    # make 'daemon' attribute always return False
-    @property
-    def daemon(self):
-        return False
-
-    @daemon.setter
-    def daemon(self, val):
-        pass
-
-
-class NoDaemonProcessPool(Pool):
-
-    def Process(self, *args, **kwds):
-        proc = super(NoDaemonProcessPool, self).Process(*args, **kwds)
-        proc.__class__ = NoDaemonProcess
-
-        return proc
-
-
 def generate_data(count):
     data = []
     for i in range(1, count):
@@ -539,10 +539,12 @@ def get_count_result():
 
 
 def main():
-    print(f"Выберите пункт.\n"
-          f"1.Создать аккаунты.\n"
-          f"2.Прокрутить колесо")
-    munu = input()
+    log()
+
+    munu = input(f"Выберите пункт.\n"
+                 f"1.Создать аккаунты.\n"
+                 f"2.Прокрутить колесо\n"
+                 f"3.Проставка\n")
     if munu == '1':
         try:
             string_count = get_count_result()
@@ -570,9 +572,12 @@ def main():
         logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')
 
         wheel()
+    elif munu == '3':
+        logging.debug('Начало проставки, все аккаунты беруться из файла spacer.txt')
+        url = input('Введите ссылку на матч')
+        start_spacer(url)
     # for key in logging.Logger.manager.loggerDict:
     #     print(key)
-    # start_spacer()
 
 
 if __name__ == '__main__':
