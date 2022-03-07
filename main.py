@@ -18,7 +18,26 @@ from selenium.webdriver.common.by import By
 
 from auto_wheel import wheel
 from chromedriver.locate import DRIVER_DIR
+from league_spacer import start_spacer
 
+file_log = logging.FileHandler('bot_log.log', encoding='utf8')
+console_out = logging.StreamHandler()
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s, %(levelname)s, %(message)s',
+    handlers=(file_log, console_out),
+)
+logger = logging.getLogger(__name__)
+logging.getLogger('undetected_chromedriver').setLevel('CRITICAL')
+logging.getLogger('selenium').setLevel('CRITICAL')
+logging.getLogger('asyncio').setLevel('CRITICAL')
+logging.getLogger('uc').setLevel('CRITICAL')
+logging.getLogger('concurrent').setLevel('CRITICAL')
+logging.getLogger('requests').setLevel('CRITICAL')
+logging.getLogger('socks').setLevel('CRITICAL')
+logging.getLogger('charset_normalizer').setLevel('CRITICAL')
+logging.getLogger('urllib3').setLevel('CRITICAL')
+logging.getLogger('dotenv').setLevel('CRITICAL')
 load_dotenv()
 
 VAC_TOKEN = os.getenv("VAC_SMS_TOKEN")
@@ -123,6 +142,7 @@ def password_generate():
 
 
 def registration(acc):
+    logging.info(f'Начало регистрации bettery аккаунт №{acc["number_process"]}')
     """Регистрация bettery."""
     # Регистрация этап 1
     global code
@@ -265,15 +285,6 @@ def registration(acc):
     time.sleep(2)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[3]/div[1]/a/div/span').click()
-    while True:
-        soup = BeautifulSoup(driver.page_source, 'lxml')
-        complete = soup.find_all("div", class_="verification__complete--q2ezc")
-        if complete:
-            break
-        error = soup.find_all("div", class_="verification__error--3hIEg")
-        if error:
-            raise Exception("Аккаунт уже был зарегестрирован")
-    driver.close()
     account = {
         'phone_number': phone_number,
         'idNum': idNum,
@@ -282,12 +293,27 @@ def registration(acc):
         'name': name,
         'surnames': surnames,
         'patronymic': patronymic,
-        'passport': passport
+        'passport': passport,
+        'number_process': acc['number_process']
+
     }
+    while True:
+        soup = BeautifulSoup(driver.page_source, 'lxml')
+        complete = soup.find_all("div", class_="verification__complete--q2ezc")
+        if complete:
+            break
+        error = soup.find_all("div", class_="verification__error--3hIEg")
+        if error:
+            time.sleep(3)
+            driver.close()
+            registration_liga(account)
+            raise Exception("Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
+    driver.close()
     return account
 
 
 def registration_liga(acc):
+    logging.info(f'Начало регистрации liga stavok аккаунт №{acc["number_process"]}')
     """Регистрация Лига ставок."""
     global code
     again_sms(acc['idNum'])
@@ -366,7 +392,7 @@ def registration_liga(acc):
         with open('total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
     else:
-        print("Аккаунт уже был использован")
+        raise Exception("Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
 
 
 def chek_nalog():
@@ -404,7 +430,7 @@ def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
         inn = resp.json()
         inn = inn['inn']
     except:
-        logging.error("Ошибка при выдачи инн")
+        logging.debug("Ошибка при выдачи инн")
         inn = False
         return inn
     return inn
@@ -424,8 +450,11 @@ def test_write(acc):
 
 def parse_txt_acc(count):
     """Достаем данные из текстовика."""
+    logging.debug(f'Резервируем номера количество: {count}')
     acc_list = []
+    indx = 0
     for i in range(0, count):
+        indx += 1
         try:
             if not check_balance(count):
                 raise Exception("Не хватает дененг на Vac-Sms")
@@ -463,7 +492,7 @@ def parse_txt_acc(count):
                    'inn': inn,
                    'tel': tel,
                    'idNum': idNum,
-                   'number_process': count + 1
+                   'number_process': indx
                    }
             acc_list.append(acc)
     return acc_list
@@ -530,16 +559,21 @@ def main():
             count = int(count)
             data = parse_txt_acc(count)
             try:
+                logging.debug("Бот начал регестрировать аккаунты")
                 p = NoDaemonProcessPool(processes=2)
                 p.map(start, data)
+                logging.debug("Регистрация завершена")
             except Exception as error:
                 logging.error(error)
 
     elif munu == '2':
-        print("Начало прокрутки, все аккаунты беруться из файла total.txt")
+        logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')
+
         wheel()
+    # for key in logging.Logger.manager.loggerDict:
+    #     print(key)
+    # start_spacer()
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
     main()
