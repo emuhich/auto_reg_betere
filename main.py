@@ -169,8 +169,14 @@ def registration(acc):
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
     time.sleep(5)
-    phone_input = driver.find_element(By.XPATH,
-                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
+    while True:
+        try:
+            phone_input = driver.find_element(By.XPATH,
+                                              '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
+        except:
+            driver.refresh()
+        else:
+            break
     phone_input.send_keys(phone_number[2:])
     date_input = driver.find_element(By.XPATH,
                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[2]/label/div[2]/input')
@@ -251,8 +257,14 @@ def registration(acc):
     time.sleep(6)
 
     # Регистрация этап 2
-    surnames_input = driver.find_element(By.XPATH,
-                                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
+    while True:
+        try:
+            surnames_input = driver.find_element(By.XPATH,
+                                                 '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
+        except:
+            driver.refresh()
+        else:
+            break
     surnames_input.click()
     surnames_input.send_keys(surnames)
     name_input = driver.find_element(By.XPATH,
@@ -282,8 +294,16 @@ def registration(acc):
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[7]/div/div[1]/div').click()
     time.sleep(2)
-    driver.find_element(By.XPATH,
-                        '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[3]/div[1]/a/div/span').click()
+    while True:
+        proceed = driver.find_element(By.XPATH,
+                                      '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[3]/div[1]/a/div/span')
+        driver.execute_script("arguments[0].click();", proceed)
+        time.sleep(1)
+        soup = BeautifulSoup(driver.page_source, 'lxml')
+        ident = soup.find_all("div", class_="markdown _new_design verification__check-data-md--2UWzu")
+        if ident:
+            break
+
     account = {
         'phone_number': phone_number,
         'idNum': idNum,
@@ -306,7 +326,7 @@ def registration(acc):
             time.sleep(3)
             driver.close()
             registration_liga(account)
-            raise Exception("Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
+            raise Exception(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
     driver.close()
     return account
 
@@ -328,14 +348,15 @@ def registration_liga(acc):
     driver = uc.Chrome(options=options)
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
     driver.get('https://www.ligastavok.ru/registration')
-    time.sleep(3)
+    time.sleep(4)
     phone_input = driver.find_element(By.XPATH,
                                       '/html/body/div[1]/div[3]/div/div/div/div/form/div[1]/div/input')
     time.sleep(1)
     phone_input.send_keys(phone_number[1:])
     time.sleep(1)
-    driver.find_element(By.XPATH,
-                        '/html/body/div[1]/div[3]/div/div/div/div/form/div[2]/button/span').click()
+    code_proceed = driver.find_element(By.CSS_SELECTOR,
+                                       '#content > div > div > div > form > div:nth-child(2) > button > span')
+    driver.execute_script("arguments[0].click();", code_proceed)
 
     while True:
         code = get_sms_code(idNum)['smsCode']
@@ -343,23 +364,24 @@ def registration_liga(acc):
             break
         time.sleep(1)
 
-    code_input = driver.find_element(By.XPATH,
-                                     '/html/body/div[1]/div[3]/div/div/div/div/form/div[2]/div/input')
+    code_input = driver.find_element(By.CSS_SELECTOR,
+                                     '#content > div > div > div > form > div:nth-child(2) > div > input')
     code_input.send_keys(code)
     time.sleep(2)
-    driver.find_element(By.XPATH,
-                        '/html/body/div[1]/div[3]/div/div/div/div/form/div[5]/button/span').click()
+    proceed = driver.find_element(By.CSS_SELECTOR,
+                                  '#content > div > div > div > form > div.registration__cell_full-width-0cae2c.registration__button-container-ddd816 > button')
+    driver.execute_script("arguments[0].click();", proceed)
 
     time.sleep(5)
-    date_input = driver.find_element(By.XPATH,
-                                     '/html/body/div[1]/div[3]/div/div/div/div/form/div[1]/div[1]/input')
+    date_input = driver.find_element(By.CSS_SELECTOR,
+                                     '#content > div > div > div > form > div:nth-child(1) > div:nth-child(1) > input')
     date_input.click()
     date_input.send_keys(date_of_birth)
-    country_input = driver.find_element(By.XPATH,
-                                        '/html/body/div[1]/div[3]/div/div/div/div/form/div[2]/div/div[2]/input')
+    country_input = driver.find_element(By.CSS_SELECTOR,
+                                        '#content > div > div > div > form > div:nth-child(2) > div > div.better-inputs__auto-complete-container-040f90 > input')
     country_input.send_keys('Россия')
-    password_input = driver.find_element(By.XPATH,
-                                         '/html/body/div[1]/div[3]/div/div/div/div/form/div[3]/div[1]/input')
+    password_input = driver.find_element(By.CSS_SELECTOR,
+                                         '#content > div > div > div > form > div:nth-child(3) > div.better-inputs__password-1460a4 > input')
     password_input.click()
     password_input.send_keys(password)
     time.sleep(1)
@@ -391,7 +413,7 @@ def registration_liga(acc):
         with open('total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
     else:
-        raise Exception("Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
+        raise Exception(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga")
 
 
 def chek_nalog():
@@ -473,11 +495,11 @@ def parse_txt_acc(count):
     logging.debug(f'Резервируем номера количество: {count}')
     acc_list = []
     indx = 0
+    if not check_balance(count):
+        raise Exception("Не хватает дененг на Vac-Sms")
     for i in range(0, count):
         indx += 1
         try:
-            if not check_balance(count):
-                raise Exception("Не хватает дененг на Vac-Sms")
             with open('result.txt', encoding='utf-8') as f:
                 lines = f.readlines()
 
