@@ -19,30 +19,12 @@ from auto_wheel import wheel
 from chromedriver.locate import DRIVER_DIR
 from league_spacer import start_spacer
 
-file_log = logging.FileHandler('bot_log.log', encoding='utf8')
-console_out = logging.StreamHandler()
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s, %(levelname)s, %(message)s',
-    handlers=(file_log, console_out),
-)
-logger = logging.getLogger(__name__)
-logging.getLogger('undetected_chromedriver').setLevel('CRITICAL')
-logging.getLogger('selenium').setLevel('CRITICAL')
-logging.getLogger('asyncio').setLevel('CRITICAL')
-logging.getLogger('uc').setLevel('CRITICAL')
-logging.getLogger('concurrent').setLevel('CRITICAL')
-logging.getLogger('requests').setLevel('CRITICAL')
-logging.getLogger('socks').setLevel('CRITICAL')
-logging.getLogger('charset_normalizer').setLevel('CRITICAL')
-logging.getLogger('urllib3').setLevel('CRITICAL')
-logging.getLogger('dotenv').setLevel('CRITICAL')
 load_dotenv()
 
 VAC_TOKEN = os.getenv("VAC_SMS_TOKEN")
 
 
-def get_phone(count):
+def get_phone():
     """Покупка номера на VAC sms."""
     params = {
         'apiKey': VAC_TOKEN,
@@ -208,7 +190,7 @@ def registration(acc):
     while True:
         if not check:
             bad_number(idNum)
-            phone = get_phone(1)
+            phone = get_phone()
             idNum = phone['idNum']
             phone_number = str(phone['tel'])
             driver.find_element(By.XPATH,
@@ -416,19 +398,6 @@ def registration_liga(acc):
         raise Exception(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga")
 
 
-def chek_nalog():
-    """Провера сайта налоговой для получения ИНН."""
-    html = urlopen('https://service.nalog.ru/inn.do')
-    bs = BeautifulSoup(html.read(), 'lxml')
-    result = bs.find_all("div", class_="col-left-75")[0]
-    if result:
-        pass
-        for r in result:
-            if r.text == 'Сервис временно недоступен по причине проведения технических работ.':
-                raise Exception(
-                    "Невозможно запустить скрипт по причине технических работ сайта налогов: https://service.nalog.ru/inn.do")
-
-
 def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
     """Получаем инн."""
     docnumber = f'{docnumber[:2]} {docnumber[2:4]} {docnumber[4:10]}'
@@ -523,7 +492,7 @@ def parse_txt_acc(count):
         passport = ps.replace(' ', '')
         inn = suggest_inn(surnames, name, patronymic, date_of_birth, '21', passport)
         if inn is not False:
-            phone = get_phone(count)
+            phone = get_phone()
             tel = phone['tel']
             idNum = phone['idNum']
             acc = {'date_of_birth': date_of_birth,
@@ -563,19 +532,18 @@ def get_count_result():
 def main():
     log()
 
-    munu = input(f"Выберите пункт.\n"
+    menu = input(f"Выберите пункт.\n"
                  f"1.Создать аккаунты.\n"
                  f"2.Прокрутить колесо\n"
                  f"3.Проставка\n")
-    if munu == '1':
+    if menu == '1':
         try:
             string_count = get_count_result()
         except UnboundLocalError:
             logging.error('Пустой файл result.txt')
         else:
-            print(f"Введите количество аккаунтов которое хотите сделать. Не больше {string_count}.")
             while True:
-                count = input()
+                count = input(f"Введите количество аккаунтов которое хотите сделать. Не больше {string_count}.")
                 if int(count) > string_count:
                     print(f"Вы не можете сделать аккаунтов больше чем строк!!!. Максимально: {string_count}")
                 else:
@@ -587,19 +555,16 @@ def main():
                 p = NoDaemonProcessPool(processes=2)
                 p.map(start, data)
                 logging.debug("Регистрация завершена")
-            except Exception as error:
-                logging.error(error)
+            except Exception:
+                logging.exception('Ошибка:')
 
-    elif munu == '2':
+    elif menu == '2':
         logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')
-
         wheel()
-    elif munu == '3':
+    elif menu == '3':
         logging.debug('Начало проставки, все аккаунты беруться из файла spacer.txt')
         url = input('Введите ссылку на матч')
         start_spacer(url)
-    # for key in logging.Logger.manager.loggerDict:
-    #     print(key)
 
 
 if __name__ == '__main__':
