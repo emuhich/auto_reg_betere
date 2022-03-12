@@ -14,13 +14,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 from ProcessPool import NoDaemonProcessPool
-from auto_wheel import wheel
+from auto_wheel import wheel, get_count_total
 from chromedriver.locate import DRIVER_DIR
+from exeptions import AccountError, NoString, NoMoney
 from league_spacer import start_spacer
 
 load_dotenv()
 
 VAC_TOKEN = os.getenv("VAC_SMS_TOKEN")
+error_inn = 0
 
 
 def get_phone():
@@ -150,14 +152,8 @@ def registration(acc):
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
     time.sleep(5)
-    while True:
-        try:
-            phone_input = driver.find_element(By.XPATH,
-                                              '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
-        except:
-            driver.refresh()
-        else:
-            break
+    phone_input = driver.find_element(By.XPATH,
+                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
     phone_input.send_keys(phone_number[2:])
     date_input = driver.find_element(By.XPATH,
                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[2]/label/div[2]/input')
@@ -238,14 +234,10 @@ def registration(acc):
     time.sleep(6)
 
     # Регистрация этап 2
-    while True:
-        try:
-            surnames_input = driver.find_element(By.XPATH,
-                                                 '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
-        except:
-            driver.refresh()
-        else:
-            break
+
+    surnames_input = driver.find_element(By.XPATH,
+                                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
+
     surnames_input.click()
     surnames_input.send_keys(surnames)
     name_input = driver.find_element(By.XPATH,
@@ -396,7 +388,7 @@ def registration_liga(acc):
         with open('total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
     else:
-        raise Exception(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
+        raise AccountError(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
 
 
 def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
@@ -462,11 +454,12 @@ def log():
 
 def parse_txt_acc(count):
     """Достаем данные из текстовика."""
+    global error_inn
     logging.debug(f'Резервируем номера количество: {count}')
     acc_list = []
     indx = 0
     if not check_balance(count):
-        raise Exception("Не хватает дененг на Vac-Sms")
+        raise NoMoney("Не хватает дененг на Vac-Sms")
     for i in range(0, count):
         indx += 1
         try:
@@ -481,7 +474,7 @@ def parse_txt_acc(count):
                     if result is None:
                         f.write(line)
         except:
-            raise Exception("Кончились строки")
+            raise NoString("Кончились строки")
 
         parts = str.split(' ', )
         ps = str.split(',')[3]
@@ -507,6 +500,9 @@ def parse_txt_acc(count):
                    'number_process': indx
                    }
             acc_list.append(acc)
+        else:
+            error_inn += 1
+
     return acc_list
 
 
@@ -534,6 +530,7 @@ def get_count_result():
 
 
 def main():
+    global error_inn
     log()
 
     menu = input(f"Выберите пункт.\n"
@@ -553,17 +550,29 @@ def main():
                 else:
                     break
             spisok = generate_list(int(count))
+            acc_error = 0
+            other_errors = 0
+            logging.debug("Бот начал регестрировать аккаунты")
             for i in spisok:
-                data = parse_txt_acc(int(i))
                 try:
-                    logging.debug("Бот начал регестрировать аккаунты")
+                    data = parse_txt_acc(int(i))
                     p = NoDaemonProcessPool(processes=2)
                     p.map(start, data)
-                    logging.debug("Регистрация завершена")
-                except Exception as error:
+                except NoString as error:
                     logging.error(error)
-
-
+                    break
+                except NoMoney as error:
+                    logging.error(error)
+                    break
+                except AccountError as error:
+                    logging.error(error)
+                    acc_error += 1
+                except Exception as error:
+                    other_errors += 1
+                    logging.error(error)
+            ready = get_count_total()
+            logging.debug(
+                f"Регистрация завершена, зарегистрировано:{ready}/{count}, ошибки инн: {error_inn}, повторки: {acc_error}, другие ошибки: {other_errors}")
     elif menu == '2':
         logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')
         wheel()
@@ -571,6 +580,7 @@ def main():
         logging.debug('Начало проставки, все аккаунты беруться из файла spacer.txt')
         url = input('Введите ссылку на матч')
         start_spacer(url)
+
 
 
 if __name__ == '__main__':
