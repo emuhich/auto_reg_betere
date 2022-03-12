@@ -1,9 +1,8 @@
-from multiprocessing.pool import Pool
 import multiprocessing
+from multiprocessing.pool import Pool
 
 
 class NoDaemonProcess(multiprocessing.Process):
-    # make 'daemon' attribute always return False
     @property
     def daemon(self):
         return False
@@ -14,7 +13,6 @@ class NoDaemonProcess(multiprocessing.Process):
 
 
 class NoDaemonProcessPool(Pool):
-
     def Process(self, *args, **kwds):
         proc = super(NoDaemonProcessPool, self).Process(*args, **kwds)
         proc.__class__ = NoDaemonProcess

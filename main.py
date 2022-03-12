@@ -5,7 +5,6 @@ import random
 import re
 import time
 from datetime import datetime
-from urllib.request import urlopen
 
 import requests as requests
 import undetected_chromedriver.v2 as uc
@@ -322,6 +321,8 @@ def registration_liga(acc):
     idNum = acc['idNum']
     date_of_birth = acc['date_of_birth']
     password = acc['password']
+    name = acc['name']
+    surnames = acc['surnames']
 
     options = uc.ChromeOptions()
     options.add_argument('--incognito')
@@ -331,8 +332,8 @@ def registration_liga(acc):
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
     driver.get('https://www.ligastavok.ru/registration')
     time.sleep(4)
-    phone_input = driver.find_element(By.XPATH,
-                                      '/html/body/div[1]/div[3]/div/div/div/div/form/div[1]/div/input')
+    phone_input = driver.find_element(By.CSS_SELECTOR,
+                                      '#content > div > div > div > form > div:nth-child(1) > div > input')
     time.sleep(1)
     phone_input.send_keys(phone_number[1:])
     time.sleep(1)
@@ -395,7 +396,7 @@ def registration_liga(acc):
         with open('total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
     else:
-        raise Exception(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga")
+        raise Exception(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
 
 
 def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
@@ -514,11 +515,14 @@ def start(acc):
     registration_liga(account)
 
 
-def generate_data(count):
+def generate_list(count):
     data = []
-    for i in range(1, count):
-        data.append(f'{str(i)}')
-
+    a = count // 2
+    for i in range(0, a):
+        data.append('2')
+    b = count % 2
+    if b > 0:
+        data.append('1')
     return data
 
 
@@ -548,15 +552,17 @@ def main():
                     print(f"Вы не можете сделать аккаунтов больше чем строк!!!. Максимально: {string_count}")
                 else:
                     break
-            count = int(count)
-            data = parse_txt_acc(count)
-            try:
-                logging.debug("Бот начал регестрировать аккаунты")
-                p = NoDaemonProcessPool(processes=2)
-                p.map(start, data)
-                logging.debug("Регистрация завершена")
-            except Exception:
-                logging.exception('Ошибка:')
+            spisok = generate_list(int(count))
+            for i in spisok:
+                data = parse_txt_acc(int(i))
+                try:
+                    logging.debug("Бот начал регестрировать аккаунты")
+                    p = NoDaemonProcessPool(processes=2)
+                    p.map(start, data)
+                    logging.debug("Регистрация завершена")
+                except Exception as error:
+                    logging.error(error)
+
 
     elif menu == '2':
         logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')

@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 
 
 def get_count_total():
+    """Достаем колличество аккаунтов из total.txt."""
     with open('total.txt', 'r', encoding='utf-8') as file:
         for idx, val in enumerate(file):
             i = idx + 1
@@ -63,4 +64,4 @@ def wheel():
             finally:
                 driver.close()
         logging.info('Прокрутка завершена')
-        logging.info(f"Сделано {count-error}/{count}")
+        logging.info(f"Сделано {count - error}/{count}")
