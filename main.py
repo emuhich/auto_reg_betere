@@ -365,7 +365,7 @@ def registration_liga(acc):
         regestr = driver.find_element(By.XPATH,
                                       '/html/body/div[1]/div[3]/div/div/div/div/form/div[6]/button/span')
         driver.execute_script("arguments[0].click();", regestr)
-    except:
+    except :
         time.sleep(1)
         regestr = driver.find_element(By.XPATH,
                                       '/html/body/div[1]/div[3]/div/div/div/div/form/div[6]/button/span')
@@ -412,7 +412,7 @@ def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
         resp.raise_for_status()
         inn = resp.json()
         inn = inn['inn']
-    except:
+    except Exception:
         logging.debug("Ошибка при выдачи инн")
         inn = False
         return inn
@@ -466,14 +466,13 @@ def parse_txt_acc(count):
             with open('result.txt', encoding='utf-8') as f:
                 lines = f.readlines()
 
-            str = lines[0]
-            pattern = re.compile(re.escape(str))
+            pattern = re.compile(re.escape(lines[0]))
             with open('result.txt', 'w', encoding='utf-8') as f:
                 for line in lines:
                     result = pattern.search(line)
                     if result is None:
                         f.write(line)
-        except:
+        except Exception:
             raise NoString("Кончились строки")
 
         parts = str.split(' ', )
@@ -572,7 +571,8 @@ def main():
                     logging.error(error)
             ready = get_count_total()
             logging.debug(
-                f"Регистрация завершена, зарегистрировано:{ready}/{count}, ошибки инн: {error_inn}, повторки: {acc_error}, другие ошибки: {other_errors}")
+                f"Регистрация завершена, зарегистрировано:{ready}/{count}, ошибки инн: {error_inn},"
+                f" повторки: {acc_error}, другие ошибки: {other_errors}")
     elif menu == '2':
         logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')
         wheel()
@@ -580,7 +580,6 @@ def main():
         logging.debug('Начало проставки, все аккаунты беруться из файла spacer.txt')
         url = input('Введите ссылку на матч')
         start_spacer(url)
-
 
 
 if __name__ == '__main__':
