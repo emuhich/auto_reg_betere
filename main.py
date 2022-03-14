@@ -414,7 +414,7 @@ def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
         inn = resp.json()
         inn = inn['inn']
     except Exception:
-        logging.debug("Ошибка при выдачи инн")
+        logging.debug(f"Ошибка при выдачи инн {name} {surname}")
         inn = False
         return inn
     return inn
