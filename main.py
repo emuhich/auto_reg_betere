@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from ProcessPool import NoDaemonProcessPool
 from auto_wheel import wheel, get_count_total
@@ -149,11 +151,11 @@ def registration(acc):
             'profile.managed_default_content_settings.stylesheets': 2
         }
     )
+
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
-    time.sleep(5)
-    phone_input = driver.find_element(By.XPATH,
-                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')
+    phone_input = WebDriverWait(driver, 120, 0.1).until(
+        EC.presence_of_element_located((By.XPATH, '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')))
     phone_input.send_keys(phone_number[2:])
     date_input = driver.find_element(By.XPATH,
                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[2]/label/div[2]/input')
@@ -324,9 +326,11 @@ def registration_liga(acc):
     driver = uc.Chrome(options=options)
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
     driver.get('https://m.ligastavok.ru/registration')
-    time.sleep(5)
-    phone_input = driver.find_element(By.XPATH,
-                                      '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
+
+    # phone_input = driver.find_element(By.XPATH,
+    #                                   '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
+    phone_input = WebDriverWait(driver, 120, 0.1).until(
+        EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')))
     time.sleep(1)
     phone_input.send_keys(phone_number[1:])
     time.sleep(1)
@@ -378,7 +382,8 @@ def registration_liga(acc):
         if next.seconds > 70:
             break
         soup = BeautifulSoup(driver.page_source, 'lxml')
-        complete = soup.find_all("div", class_="notification-6593a1 notification_info-f737e8 simple-ident-limits-info-339d4c")
+        complete = soup.find_all("div",
+                                 class_="notification-6593a1 notification_info-f737e8 simple-ident-limits-info-339d4c")
         if complete:
             verify = True
             break
