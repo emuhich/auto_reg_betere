@@ -8,3 +8,7 @@ class NoString(Exception):
 
 class NoMoney(Exception):
     pass
+
+
+class AccountErrorBettery(Exception):
+    pass
