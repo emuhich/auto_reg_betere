@@ -12,15 +12,17 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 from ProcessPool import NoDaemonProcessPool
 from auto_wheel import wheel, get_count_total
 from chromedriver.locate import DRIVER_DIR
 from exeptions import AccountError, NoString, NoMoney, AccountErrorBettery
 from league_spacer import start_spacer
+import warnings
 
+warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 load_dotenv()
 
 VAC_TOKEN = os.getenv("VAC_SMS_TOKEN")
@@ -155,7 +157,8 @@ def registration(acc):
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
     phone_input = WebDriverWait(driver, 120, 0.1).until(
-        EC.presence_of_element_located((By.XPATH, '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')))
+        EC.presence_of_element_located((By.XPATH,
+                                        '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[1]/label/div[2]/input')))
     phone_input.send_keys(phone_number[2:])
     date_input = driver.find_element(By.XPATH,
                                      '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[1]/div[1]/div[1]/div[2]/label/div[2]/input')
@@ -183,9 +186,9 @@ def registration(acc):
         if code is not None:
             check = True
             break
-        time.sleep(2)
+        time.sleep(1)
     while True:
-        if not check:
+        if check is False:
             bad_number(idNum)
             phone = get_phone()
             idNum = phone['idNum']
@@ -233,12 +236,11 @@ def registration(acc):
     time.sleep(2)
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[4]/div[1]/div/div/div[2]/div/div[1]/form/div/div/div[2]/div[2]/div/button/div/span').click()
-    time.sleep(6)
 
     # Регистрация этап 2
-
-    surnames_input = driver.find_element(By.XPATH,
-                                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')
+    surnames_input = WebDriverWait(driver, 120, 0.1).until(
+        EC.presence_of_element_located((By.XPATH,
+                                        '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[1]/label/div[2]/input')))
 
     surnames_input.click()
     surnames_input.send_keys(surnames)
@@ -302,7 +304,12 @@ def registration(acc):
             driver.close()
             registration_liga(account)
             raise AccountErrorBettery(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
-    driver.close()
+    try:
+        driver.close()
+        driver.quit()
+        driver.dispose()
+    except:
+        pass
     return account
 
 
@@ -327,12 +334,18 @@ def registration_liga(acc):
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
     driver.get('https://m.ligastavok.ru/registration')
 
-    # phone_input = driver.find_element(By.XPATH,
-    #                                   '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
-    phone_input = WebDriverWait(driver, 120, 0.1).until(
+    phone_input = WebDriverWait(driver, 120, 0.1, ).until(
         EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')))
-    time.sleep(1)
-    phone_input.send_keys(phone_number[1:])
+    phone = ''
+    while phone == '':
+        phone_input.send_keys(phone_number[1:])
+        phone_cheak = driver.find_element(By.XPATH,
+                                          '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
+        phone = phone_cheak.get_attribute("value")
+        if phone == '':
+            driver.refresh()
+            phone_input = WebDriverWait(driver, 120, 0.1, ).until(
+                EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')))
     time.sleep(1)
     code_proceed = driver.find_element(By.XPATH,
                                        '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/button')
@@ -352,7 +365,7 @@ def registration_liga(acc):
                                   '/html/body/div[1]/div[1]/div[4]/div/form/div[5]/button')
     driver.execute_script("arguments[0].click();", proceed)
 
-    time.sleep(5)
+    time.sleep(3)
     date_input = driver.find_element(By.XPATH,
                                      '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
     date_input.click()
@@ -388,7 +401,12 @@ def registration_liga(acc):
             verify = True
             break
 
-    driver.close()
+    try:
+        driver.close()
+        driver.quit()
+        driver.dispose()
+    except:
+        pass
     if verify is True:
         string = f"{phone_number[1:]}:{password}\n"
         with open('total.txt', 'a', encoding="UTF8") as f:
@@ -577,7 +595,6 @@ def main():
                 except Exception as error:
                     other_errors += 1
                     logging.error(error)
-                    logging.exception(Exception)
             ready = get_count_total()
             logging.debug(
                 f"Регистрация завершена, зарегистрировано:{ready}/{count}, ошибки инн: {error_inn},"

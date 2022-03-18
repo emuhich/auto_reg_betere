@@ -2,6 +2,8 @@ import time
 
 import undetected_chromedriver.v2 as uc
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 from ProcessPool import NoDaemonProcessPool
 
@@ -27,35 +29,35 @@ def open_ligue(acc_list):
     password = acc_list['password']
     phone = acc_list['phone']
     url = acc_list['url']
-    sleep = sleep * 40
+    sleep = sleep * 25
     time.sleep(sleep)
     options = uc.ChromeOptions()
     options.add_argument('--incognito')
     options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
     options.add_argument('--disable-gpu')
+    options.add_argument("--window-size=400,901")
     driver = uc.Chrome(options=options)
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
-    driver.get('https://www.ligastavok.ru/')
-    driver.maximize_window()
+    driver.get('https://m.ligastavok.ru')
+    login = WebDriverWait(driver, 30, 0.1, ).until(
+        EC.presence_of_element_located(
+            (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
+    login.click()
     time.sleep(1)
-    driver.find_element(By.XPATH,
-                        '/html/body/div/header/div/div[3]/button/span/span').click()
-    time.sleep(1)
-    password_input = driver.find_element(By.XPATH,
-                                         '/html/body/div[1]/div[5]/div[2]/div[3]/div[1]/div[2]/form/div[2]/input')
-    time.sleep(1)
-    password_input.send_keys(password)
-    time.sleep(2)
-    phone_input = driver.find_element(By.CSS_SELECTOR,
-                                      '#auth > div:nth-child(1) > input')
+    phone_input = driver.find_element(By.XPATH,
+                                      '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
     time.sleep(1)
     phone_input.click()
     phone_input.send_keys(phone)
-    time.sleep(2)
-    driver.find_element(By.CSS_SELECTOR,
-                        '#auth > button').click()
+    password_input = driver.find_element(By.XPATH,
+                                         '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
+
+    password_input.send_keys(password)
+
+    driver.find_element(By.XPATH,
+                        '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
     time.sleep(8)
-    driver.get(url)
+    driver.get('https://m.ligastavok.ru/' + url)
     time.sleep(3600)
 
 
