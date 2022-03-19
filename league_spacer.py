@@ -1,5 +1,6 @@
 import time
-
+from multiprocessing import freeze_support
+freeze_support()
 import undetected_chromedriver.v2 as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,7 +11,7 @@ from ProcessPool import NoDaemonProcessPool
 
 def get_list_total(url):
     acc_list = []
-    with open('spacer.txt', 'r', encoding='utf-8') as file:
+    with open('works/spacer.txt', 'r', encoding='utf-8') as file:
         for idx, val in enumerate(file):
             i = idx + 1
             phone = val.split(':')[0]

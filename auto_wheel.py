@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 def get_count_total():
     """Достаем колличество аккаунтов из total.txt."""
-    with open('total.txt', 'r', encoding='utf-8') as file:
+    with open('works/total.txt', 'r', encoding='utf-8') as file:
         try:
             for idx, val in enumerate(file):
                 i = idx + 1
@@ -22,7 +22,7 @@ def wheel():
     """Прокрутка колеса."""
     count = get_count_total()
     error = 0
-    with open('total.txt', 'r', encoding='utf-8') as file:
+    with open('works/total.txt', 'r', encoding='utf-8') as file:
         for idx, val in enumerate(file):
             options = uc.ChromeOptions()
             options.add_argument('--incognito')
@@ -68,7 +68,7 @@ def wheel():
                 time.sleep(10)
             except:
                 error += 1
-                with open('error_wheels.txt', 'a', encoding="UTF8") as f:
+                with open('works/error_wheels.txt', 'a', encoding="UTF8") as f:
                     f.write(f"{val.split(':')[0]}:{val.split(':')[1]}")
             finally:
                 try:
