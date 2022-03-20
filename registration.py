@@ -1,5 +1,3 @@
-from multiprocessing import freeze_support
-
 from ProcessPool import NoDaemonProcessPool
 from vac_sms_api import get_sms_code, bad_number, get_phone, check_balance, again_sms
 import requests as requests
@@ -22,7 +20,6 @@ from chromedriver.locate import DRIVER_DIR
 from exeptions import AccountError, NoString, NoMoney, AccountErrorBettery
 import warnings
 
-freeze_support()
 import undetected_chromedriver as uc
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')

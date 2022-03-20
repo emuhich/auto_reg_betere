@@ -1,6 +1,5 @@
 import time
-from multiprocessing import freeze_support
-freeze_support()
+
 import undetected_chromedriver.v2 as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC

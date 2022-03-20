@@ -10,7 +10,6 @@ from league_spacer import start_spacer
 from vac_sms_api import check_balance, get_phone
 import registration
 
-freeze_support()
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 
@@ -187,9 +186,10 @@ def main():
         wheel()
     elif menu == '3':
         logging.debug('Начало проставки, все аккаунты беруться из файла spacer.txt')
-        url = input('Введите ссылку на матч')
+        url = input('Введите ссылку на матч\n')
         start_spacer(url)
 
 
 if __name__ == '__main__':
+    freeze_support()
     main()

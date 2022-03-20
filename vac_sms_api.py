@@ -1,6 +1,6 @@
 import requests
 
-VAC_TOKEN = '305117e52b904205a45378ad493385bb'
+VAC_TOKEN = 'd5ff424b443e4472bd1b1a1db924811e'
 
 
 def get_phone():
