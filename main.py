@@ -5,9 +5,9 @@ from multiprocessing import freeze_support
 import requests as requests
 
 from auto_wheel import wheel, get_count_total
-from exeptions import AccountError, NoString, NoMoney, AccountErrorBettery
+from exeptions import AccountError, NoString, NoMoney, AccountErrorBettery, NoNumber
 from league_spacer import start_spacer
-from vac_sms_api import check_balance, get_phone
+from vac_sms_api import check_balance, get_phone, bad_number
 import registration
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
@@ -62,7 +62,19 @@ def log():
     logging.getLogger('dotenv').setLevel('CRITICAL')
 
 
-def parse_txt_acc(count):
+def get_phone_pref(tel, idNum):
+    prefics = tel[1:4]
+    pref = '986'
+    while prefics == pref:
+        bad_number(idNum)
+        phone = get_phone()
+        tel = phone['tel']
+        idNum = phone['idNum']
+        prefics = tel[1:4]
+    return tel, idNum
+
+
+def parse_txt_acc(count, pref=False):
     """Достаем данные из текстовика."""
     global error_inn
     logging.debug(f'Резервируем номера количество: {count}')
@@ -101,6 +113,8 @@ def parse_txt_acc(count):
             phone = get_phone()
             tel = phone['tel']
             idNum = phone['idNum']
+            if pref is True:
+                tel, idNum = get_phone_pref(tel, idNum)
             acc = {'date_of_birth': date_of_birth,
                    'passport': passport,
                    'patronymic': patronymic,
@@ -174,6 +188,9 @@ def main():
                     acc_error += 1
                 except AccountErrorBettery:
                     continue
+                except NoNumber as error:
+                    logging.error(error)
+                    break
                 except Exception as error:
                     other_errors += 1
                     logging.error(error)

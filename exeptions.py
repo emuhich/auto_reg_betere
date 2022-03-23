@@ -12,3 +12,7 @@ class NoMoney(Exception):
 
 class AccountErrorBettery(Exception):
     pass
+
+
+class NoNumber(Exception):
+    pass

@@ -1,6 +1,14 @@
 import requests
+import configparser
 
-VAC_TOKEN = 'd5ff424b443e4472bd1b1a1db924811e'
+from exeptions import NoNumber
+
+config = configparser.ConfigParser()
+config.read("settings.ini")
+
+VAC_TOKEN = config["SETTINGS"]["vac_token"]
+OPERATOR = config["SETTINGS"]["operator"]
+RENT = config["SETTINGS"]["rent"]
 
 
 def get_phone():
@@ -9,20 +17,14 @@ def get_phone():
         'apiKey': VAC_TOKEN,
         'service': 'cp',
         'country': 'ru',
-        'operator': 'mtt',
+        'operator': OPERATOR,
+        'rent': eval(RENT),
         'softId': 1025
     }
     phone_count = requests.get('https://vak-sms.com/api/getCountNumber/', params=params)
     value = phone_count.json()
     if int(value['cp']) < 20:
-        params = {
-            'apiKey': VAC_TOKEN,
-            'service': 'cp',
-            'country': 'ru',
-            'operator': 'mtt',
-            'rent': True,
-            'softId': 1025
-        }
+        raise NoNumber("Кончились номера")
     phone = requests.get('https://vak-sms.com/api/getNumber/', params=params)
     return phone.json()
 
@@ -30,15 +32,7 @@ def get_phone():
 def check_balance(count):
     """Проверка баланса VAC sms."""
     summ = 10
-    params = {
-        'apiKey': VAC_TOKEN,
-        'service': 'cp',
-        'country': 'ru',
-        'operator': 'mtt'
-    }
-    phone_count = requests.get('https://vak-sms.com/api/getCountNumber/', params=params)
-    value = phone_count.json()
-    if int(value['cp']) < 20:
+    if eval(RENT) is True:
         summ = 25
     params = {
         'apiKey': VAC_TOKEN,
