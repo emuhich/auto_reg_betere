@@ -1,26 +1,21 @@
-from ProcessPool import NoDaemonProcessPool
-from vac_sms_api import get_sms_code, bad_number, get_phone, check_balance, again_sms
-import requests as requests
-
 import json
 import logging
 import random
-import re
 import time
+import warnings
 from datetime import datetime
 
+import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from ProcessPool import NoDaemonProcessPool
 from chromedriver.locate import DRIVER_DIR
-from exeptions import AccountError, NoString, NoMoney, AccountErrorBettery
-import warnings
-
-import undetected_chromedriver as uc
+from exeptions import AccountError, AccountErrorBettery
+from vac_sms_api import get_sms_code, bad_number, get_phone, again_sms
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
@@ -173,12 +168,6 @@ def registration(acc):
     inn_input.click()
     inn_input.send_keys(inn)
     time.sleep(1)
-    if inn == '':
-        inn = suggest_inn(surname=surnames, name=name, patronymic=patronymic, birthdate=date_of_birth,
-                          docnumber=passport, doctype='21')
-        inn_input.click()
-        inn_input.clear()
-        inn_input.send_keys(inn)
 
     driver.find_element(By.XPATH,
                         '/html/body/div[2]/div/div[5]/div[1]/div/div/div[2]/section/div[1]/div[2]/section/div/div/div[2]/div[1]/div[2]/div[7]/div/div[1]/div').click()
@@ -246,18 +235,18 @@ def registration_liga(acc):
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
     driver.get('https://m.ligastavok.ru/registration')
 
-    phone_input = WebDriverWait(driver, 120, 0.1, ).until(
-        EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')))
+    WebDriverWait(driver, 120, 0.1, ).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,
+                                        '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')))
     phone = ''
     while phone == '':
+        phone_input = driver.find_element(By.CSS_SELECTOR,
+                                          '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
+        time.sleep(1)
         phone_input.send_keys(phone_number[1:])
-        phone_cheak = driver.find_element(By.XPATH,
-                                          '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
+        phone_cheak = driver.find_element(By.CSS_SELECTOR,
+                                          '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
         phone = phone_cheak.get_attribute("value")
-        # if phone == '':
-        #     driver.refresh()
-        #     phone_input = WebDriverWait(driver, 120, 0.1, ).until(
-        #         EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')))
     time.sleep(1)
     code_proceed = driver.find_element(By.XPATH,
                                        '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/button')
@@ -327,34 +316,6 @@ def registration_liga(acc):
         raise AccountError(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
 
 
-def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
-    """Получаем инн."""
-    docnumber = f'{docnumber[:2]} {docnumber[2:4]} {docnumber[4:10]}'
-    url = "https://service.nalog.ru/inn-proc.do"
-    data = {
-        "fam": surname,
-        "nam": name,
-        "otch": patronymic,
-        "bdate": birthdate,
-        "bplace": "",
-        "doctype": doctype,
-        "docno": docnumber,
-        "c": "innMy",
-        "captcha": "",
-        "captchaToken": "",
-    }
-    try:
-        resp = requests.post(url=url, data=data)
-        resp.raise_for_status()
-        inn = resp.json()
-        inn = inn['inn']
-    except Exception:
-        logging.debug(f"Ошибка при выдачи инн {name} {surname}")
-        inn = False
-        return inn
-    return inn
-
-
 def test_write(acc):
     account = {"acc2": {'phone_number': acc['phone_number'],
                         'idNum': acc['idNum'],
@@ -365,83 +326,6 @@ def test_write(acc):
     b = json.load(open('result.json'))
     b.update(account)
     json.dump(b, open('result.json', 'w'))
-
-
-def log():
-    file_log = logging.FileHandler('bot_log.log', encoding='utf8')
-    console_out = logging.StreamHandler()
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s, %(levelname)s, %(message)s',
-        handlers=(file_log, console_out),
-    )
-
-    logging.getLogger('undetected_chromedriver').setLevel('CRITICAL')
-    logging.getLogger('selenium').setLevel('CRITICAL')
-    logging.getLogger('asyncio').setLevel('CRITICAL')
-    logging.getLogger('uc').setLevel('CRITICAL')
-    logging.getLogger('concurrent').setLevel('CRITICAL')
-    logging.getLogger('requests').setLevel('CRITICAL')
-    logging.getLogger('socks').setLevel('CRITICAL')
-    logging.getLogger('charset_normalizer').setLevel('CRITICAL')
-    logging.getLogger('urllib3').setLevel('CRITICAL')
-    logging.getLogger('dotenv').setLevel('CRITICAL')
-
-
-def parse_txt_acc(count):
-    """Достаем данные из текстовика."""
-    global error_inn
-    logging.debug(f'Резервируем номера количество: {count}')
-    acc_list = []
-    indx = 0
-    logging.debug(f'Проверяю баланс')
-    if not check_balance(count):
-        raise NoMoney("Не хватает дененг на Vac-Sms")
-    logging.debug(f'Проверяю беру строку')
-    for i in range(0, count):
-        indx += 1
-        try:
-            with open('works/result.txt', encoding='utf-8') as f:
-                lines = f.readlines()
-            str = lines[0]
-            pattern = re.compile(re.escape(str))
-            with open('works/result.txt', 'w', encoding='utf-8') as f:
-                for line in lines:
-                    result = pattern.search(line)
-                    if result is None:
-                        f.write(line)
-        except Exception:
-            raise NoString("Кончились строки")
-
-        parts = str.split(' ', )
-        ps = str.split(',')[3]
-
-        name = parts[1]
-        surnames = parts[0]
-        patronymic = parts[2].replace(',', '')
-        date_of_birth = parts[5].replace(',', '')
-        passport = ps.replace(' ', '')
-        logging.debug(f'Беру инн')
-        inn = suggest_inn(surnames, name, patronymic, date_of_birth, '21', passport)
-        if inn is not False:
-            phone = get_phone()
-            tel = phone['tel']
-            idNum = phone['idNum']
-            acc = {'date_of_birth': date_of_birth,
-                   'passport': passport,
-                   'patronymic': patronymic,
-                   'name': name,
-                   'surnames': surnames,
-                   'inn': inn,
-                   'tel': tel,
-                   'idNum': idNum,
-                   'number_process': indx
-                   }
-            acc_list.append(acc)
-        else:
-            error_inn += 1
-
-    return acc_list
 
 
 def start(acc):
