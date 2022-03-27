@@ -228,21 +228,24 @@ def registration_liga(acc):
     global code
     again_sms(acc['idNum'])
     profile_id = get_profile_id()
-    port = start_dolphin_automation(int(profile_id))
     phone_number = acc['phone_number']
     idNum = acc['idNum']
     date_of_birth = acc['date_of_birth']
     password = acc['password']
     name = acc['name']
     surnames = acc['surnames']
-
-    options = Options()
-    options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
-    driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
+    while True:
+        port = start_dolphin_automation(int(profile_id))
+        options = Options()
+        options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
+        driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
+        driver.set_window_size(400, 901)
+        driver.get('https://m.ligastavok.ru/promo/fortune?source=registration')
+        if driver.current_url != 'https://m.ligastavok.ru/jackpot':
+            break
+        driver.close()
+        time.sleep(2)
     driver.get('https://m.ligastavok.ru/registration')
-    driver.set_window_size(400, 901)
-    time.sleep(2)
-
     WebDriverWait(driver, 120, 0.1, ).until(
         EC.presence_of_element_located((By.CSS_SELECTOR,
                                         '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')))
@@ -320,9 +323,6 @@ def registration_liga(acc):
         string = f"{phone_number[1:]}:{password}:{profile_id}"
         with open('works/total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
-        driver.find_element(By.CSS_SELECTOR, '#app > div.application-c8e1da.application_disable-nav-609602 > div.application__fixed-ae5951 > header > div.block-header__button-6fc6ab > svg').click()
-        time.sleep(1)
-        driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[3]/aside/div[4]/span').click()
     else:
         raise AccountError(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
     try:

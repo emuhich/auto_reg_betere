@@ -1,6 +1,7 @@
 import logging
 import time
 
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -43,26 +44,32 @@ def wheel():
                 driver.set_window_size(400, 901)
                 driver.get('https://m.ligastavok.ru')
                 time.sleep(1)
-                login = WebDriverWait(driver, 30, 0.1, ).until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
-                login.click()
-                time.sleep(1)
-                phone_input = driver.find_element(By.XPATH,
-                                                  '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
-                time.sleep(1)
-                phone_input.click()
-                phone_input.send_keys(phone)
-                password_input = driver.find_element(By.XPATH,
-                                                     '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
+                in_account = True
+                try:
+                    driver.find_element(By.CSS_SELECTOR,'#app > div.application-c8e1da > div.application__fixed-ae5951 > header > div.block-header__controls-ffdd12 > a.block-header__wallet-5ba961 > div')
+                except:
+                    in_account = False
+                if not in_account:
+                    login = WebDriverWait(driver, 30, 0.1, ).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
+                    login.click()
+                    time.sleep(1)
+                    phone_input = driver.find_element(By.XPATH,
+                                                      '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
+                    time.sleep(1)
+                    phone_input.click()
+                    phone_input.send_keys(phone)
+                    password_input = driver.find_element(By.XPATH,
+                                                         '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
 
-                password_input.send_keys(password)
+                    password_input.send_keys(password)
 
-                driver.find_element(By.XPATH,
-                                    '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
-                WebDriverWait(driver, 60, 0.1, ).until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, '/html/body/div[1]/div[1]/div[3]/div')))
+                    driver.find_element(By.XPATH,
+                                        '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
+                    WebDriverWait(driver, 60, 0.1, ).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, '/html/body/div[1]/div[1]/div[3]/div')))
                 driver.get('https://m.ligastavok.ru/promo/fortune')
                 WebDriverWait(driver, 30, 0.1, ).until(
                     EC.presence_of_element_located(
@@ -72,11 +79,6 @@ def wheel():
                 bonus = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/button')
                 driver.execute_script("arguments[0].click();", bonus)
                 time.sleep(10)
-                driver.switch_to.default_content()
-                driver.find_element(By.CSS_SELECTOR,
-                                    '#app > div.application-c8e1da.application_disable-nav-609602 > div.application__fixed-ae5951 > header > div.block-header__button-6fc6ab > svg').click()
-                time.sleep(1)
-                driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[3]/aside/div[4]/span').click()
             except Exception as error:
                 print(error)
                 error += 1

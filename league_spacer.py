@@ -41,24 +41,31 @@ def open_ligue(acc_list):
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.set_window_size(400, 901)
     driver.get('https://m.ligastavok.ru')
-    login = WebDriverWait(driver, 30, 0.1, ).until(
-        EC.presence_of_element_located(
-            (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
-    login.click()
-    time.sleep(1)
-    phone_input = driver.find_element(By.XPATH,
-                                      '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
-    time.sleep(1)
-    phone_input.click()
-    phone_input.send_keys(phone)
-    password_input = driver.find_element(By.XPATH,
-                                         '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
+    in_account = True
+    try:
+        driver.find_element(By.CSS_SELECTOR,
+                            '#app > div.application-c8e1da > div.application__fixed-ae5951 > header > div.block-header__controls-ffdd12 > a.block-header__wallet-5ba961 > div')
+    except:
+        in_account = False
+    if not in_account:
+        login = WebDriverWait(driver, 30, 0.1, ).until(
+            EC.presence_of_element_located(
+                (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
+        login.click()
+        time.sleep(1)
+        phone_input = driver.find_element(By.XPATH,
+                                          '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
+        time.sleep(1)
+        phone_input.click()
+        phone_input.send_keys(phone)
+        password_input = driver.find_element(By.XPATH,
+                                             '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
 
-    password_input.send_keys(password)
+        password_input.send_keys(password)
 
-    driver.find_element(By.XPATH,
-                        '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
-    time.sleep(8)
+        driver.find_element(By.XPATH,
+                            '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
+        time.sleep(8)
     driver.get('https://m.ligastavok.ru/' + url)
 
 

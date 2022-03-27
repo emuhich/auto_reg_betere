@@ -31,7 +31,7 @@ def get_phone():
 
 def check_balance(count):
     """Проверка баланса VAC sms."""
-    summ = 10
+    summ = 13
     if eval(RENT) is True:
         summ = 25
     params = {
