@@ -5,15 +5,16 @@ import time
 import warnings
 from datetime import datetime
 
-import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from ProcessPool import NoDaemonProcessPool
 from chromedriver.locate import DRIVER_DIR
+from dolphin import start_dolphin_automation, get_profile_id
 from exeptions import AccountError, AccountErrorBettery
 from vac_sms_api import get_sms_code, bad_number, get_phone, again_sms
 
@@ -219,6 +220,8 @@ def registration_liga(acc):
     """Регистрация Лига ставок."""
     global code
     again_sms(acc['idNum'])
+    profile_id = get_profile_id()
+    port = start_dolphin_automation(int(profile_id))
     phone_number = acc['phone_number']
     idNum = acc['idNum']
     date_of_birth = acc['date_of_birth']
@@ -226,27 +229,32 @@ def registration_liga(acc):
     name = acc['name']
     surnames = acc['surnames']
 
-    options = webdriver.ChromeOptions()
-    options.add_argument('--incognito')
-    options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
-    options.add_argument('--disable-gpu')
-    options.add_argument("--window-size=400,901")
-    driver = uc.Chrome(options=options)
-    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    options = Options()
+    options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
+    driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://m.ligastavok.ru/registration')
+    driver.set_window_size(400, 901)
+    time.sleep(2)
 
     WebDriverWait(driver, 120, 0.1, ).until(
         EC.presence_of_element_located((By.CSS_SELECTOR,
                                         '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')))
-    phone = ''
-    while phone == '':
-        phone_input = driver.find_element(By.CSS_SELECTOR,
-                                          '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
-        time.sleep(1)
-        phone_input.send_keys(phone_number[1:])
-        phone_cheak = driver.find_element(By.CSS_SELECTOR,
-                                          '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
-        phone = phone_cheak.get_attribute("value")
+    phone_input = driver.find_element(By.XPATH,
+                                      '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
+    phone_input.click()
+    time.sleep(1)
+    phone_input = driver.find_element(By.XPATH,
+                                      '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
+    phone_input.send_keys(phone_number[1:])
+    # phone = ''
+    # while phone == '':
+    #     phone_input = driver.find_element(By.CSS_SELECTOR,
+    #                                       '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
+    #     time.sleep(1)
+    #     phone_input.send_keys(phone_number[1:])
+    #     phone_cheak = driver.find_element(By.CSS_SELECTOR,
+    #                                       '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
+    #     phone = phone_cheak.get_attribute("value")
     time.sleep(1)
     code_proceed = driver.find_element(By.XPATH,
                                        '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/button')
@@ -309,7 +317,7 @@ def registration_liga(acc):
     except:
         pass
     if verify is True:
-        string = f"{phone_number[1:]}:{password}\n"
+        string = f"{phone_number[1:]}:{password}:{profile_id}\n"
         with open('works/total.txt', 'a', encoding="UTF8") as f:
             f.write(string)
     else:

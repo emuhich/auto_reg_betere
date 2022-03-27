@@ -5,6 +5,7 @@ from multiprocessing import freeze_support
 import requests as requests
 
 from auto_wheel import wheel, get_count_total
+from dolphin import multiple_create_browser
 from exeptions import AccountError, NoString, NoMoney, AccountErrorBettery, NoNumber
 from league_spacer import start_spacer
 from vac_sms_api import check_balance, get_phone, bad_number
@@ -98,7 +99,6 @@ def parse_txt_acc(count, pref=False):
                         f.write(line)
         except Exception:
             raise NoString("Кончились строки")
-
         parts = str.split(' ', )
         ps = str.split(',')[3]
 
@@ -123,7 +123,7 @@ def parse_txt_acc(count, pref=False):
                    'inn': inn,
                    'tel': tel,
                    'idNum': idNum,
-                   'number_process': indx
+                   'number_process': indx,
                    }
             acc_list.append(acc)
         else:
@@ -156,7 +156,8 @@ def main():
     menu = input(f"Выберите пункт.\n"
                  f"1.Создать аккаунты.\n"
                  f"2.Прокрутить колесо\n"
-                 f"3.Проставка\n")
+                 f"3.Проставка\n"
+                 f"4.Создать профиля Dolphin\n")
     if menu == '1':
         try:
             string_count = get_count_result()
@@ -205,6 +206,14 @@ def main():
         logging.debug('Начало проставки, все аккаунты беруться из файла spacer.txt')
         url = input('Введите ссылку на матч\n')
         start_spacer(url)
+    elif menu == '4':
+        logging.debug('Начало создания профилей Dolphin')
+        count = input('Введите количество профилей\n')
+        result = multiple_create_browser(int(count))
+        with open('works/dolphin.txt', 'a', encoding="UTF8") as f:
+            for i in result:
+                f.write(f'{str(i)}\n')
+        logging.debug(f'Профиля созданы в количестве {len(result)} штук')
 
 
 if __name__ == '__main__':
