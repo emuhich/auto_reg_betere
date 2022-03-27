@@ -1,11 +1,13 @@
 import time
 
-import undetected_chromedriver.v2 as uc
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from ProcessPool import NoDaemonProcessPool
+from chromedriver.locate import DRIVER_DIR
+from dolphin import start_dolphin_automation
 
 
 def get_list_total(url):
@@ -14,11 +16,13 @@ def get_list_total(url):
         for idx, val in enumerate(file):
             i = idx + 1
             phone = val.split(':')[0]
-            password = val.split(':')[1].replace('\n', '')
+            password = val.split(':')[1]
+            profile_id = val.split(':')[2].replace('\n', '')
             acc = {'phone': phone,
                    'password': password,
                    'number_process': i,
-                   'url': url
+                   'url': url,
+                   'profile_id': profile_id
                    }
             acc_list.append(acc)
     return acc_list
@@ -29,15 +33,13 @@ def open_ligue(acc_list):
     password = acc_list['password']
     phone = acc_list['phone']
     url = acc_list['url']
-    sleep = sleep * 25
-    time.sleep(sleep)
-    options = uc.ChromeOptions()
-    options.add_argument('--incognito')
-    options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
-    options.add_argument('--disable-gpu')
-    options.add_argument("--window-size=400,901")
-    driver = uc.Chrome(options=options)
-    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    profile_id = acc_list['profile_id']
+    port = start_dolphin_automation(int(profile_id))
+    options = Options()
+    options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
+    # Change chrome driver path accordingly
+    driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
+    driver.set_window_size(400, 901)
     driver.get('https://m.ligastavok.ru')
     login = WebDriverWait(driver, 30, 0.1, ).until(
         EC.presence_of_element_located(
@@ -58,10 +60,10 @@ def open_ligue(acc_list):
                         '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
     time.sleep(8)
     driver.get('https://m.ligastavok.ru/' + url)
-    time.sleep(3600)
 
 
 def start_spacer(url):
     acc_list = get_list_total(url)
-    p = NoDaemonProcessPool(processes=len((acc_list)))
-    p.map(open_ligue, acc_list)
+    for i in acc_list:
+        open_ligue(i)
+

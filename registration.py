@@ -195,9 +195,16 @@ def registration(acc):
         'number_process': acc['number_process']
 
     }
+    now = datetime.now()
     while True:
+        next = datetime.now() - now
         soup = BeautifulSoup(driver.page_source, 'lxml')
         complete = soup.find_all("div", class_="verification__complete--q2ezc")
+        if next.seconds >= 300:
+            time.sleep(3)
+            driver.close()
+            registration_liga(account)
+            raise AccountErrorBettery(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Betery")
         if complete:
             break
         error = soup.find_all("div", class_="verification__error--3hIEg")
@@ -309,19 +316,21 @@ def registration_liga(acc):
         if complete:
             verify = True
             break
-
+    if verify is True:
+        string = f"{phone_number[1:]}:{password}:{profile_id}"
+        with open('works/total.txt', 'a', encoding="UTF8") as f:
+            f.write(string)
+        driver.find_element(By.CSS_SELECTOR, '#app > div.application-c8e1da.application_disable-nav-609602 > div.application__fixed-ae5951 > header > div.block-header__button-6fc6ab > svg').click()
+        time.sleep(1)
+        driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[3]/aside/div[4]/span').click()
+    else:
+        raise AccountError(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
     try:
         driver.close()
         driver.quit()
         driver.dispose()
     except:
         pass
-    if verify is True:
-        string = f"{phone_number[1:]}:{password}:{profile_id}\n"
-        with open('works/total.txt', 'a', encoding="UTF8") as f:
-            f.write(string)
-    else:
-        raise AccountError(f"Аккаунт №{acc['number_process']} уже был зарегестрирован Liga, {name} {surnames}")
 
 
 def test_write(acc):

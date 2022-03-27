@@ -81,10 +81,8 @@ def parse_txt_acc(count, pref=False):
     logging.debug(f'Резервируем номера количество: {count}')
     acc_list = []
     indx = 0
-    logging.debug(f'Проверяю баланс')
     if not check_balance(count):
         raise NoMoney("Не хватает дененг на Vac-Sms")
-    logging.debug(f'Проверяю беру строку')
     for i in range(0, count):
         indx += 1
         try:
@@ -107,7 +105,6 @@ def parse_txt_acc(count, pref=False):
         patronymic = parts[2].replace(',', '')
         date_of_birth = parts[5].replace(',', '')
         passport = ps.replace(' ', '')
-        logging.debug(f'Беру инн')
         inn = suggest_inn(surnames, name, patronymic, date_of_birth, '21', passport)
         if inn is not False:
             phone = get_phone()

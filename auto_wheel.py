@@ -1,10 +1,14 @@
 import logging
 import time
 
-import undetected_chromedriver.v2 as uc
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from chromedriver.locate import DRIVER_DIR
+from dolphin import start_dolphin_automation
 
 
 def get_count_total():
@@ -24,19 +28,21 @@ def wheel():
     error = 0
     with open('works/total.txt', 'r', encoding='utf-8') as file:
         for idx, val in enumerate(file):
-            options = uc.ChromeOptions()
-            options.add_argument('--incognito')
-            options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
-            options.add_argument('--disable-gpu')
-            options.add_argument("--window-size=400,901")
-            driver = uc.Chrome(options=options)
+            profile_id = val.split(':')[2]
+            port = start_dolphin_automation(int(profile_id))
+            options = Options()
+            options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
+            # Change chrome driver path accordingly
+            driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
             driver.set_page_load_timeout(30)
             try:
                 i = idx + 1
                 phone = val.split(':')[0]
                 password = val.split(':')[1]
                 print(f'{i}/{count}')
+                driver.set_window_size(400, 901)
                 driver.get('https://m.ligastavok.ru')
+                time.sleep(1)
                 login = WebDriverWait(driver, 30, 0.1, ).until(
                     EC.presence_of_element_located(
                         (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
@@ -66,10 +72,16 @@ def wheel():
                 bonus = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/button')
                 driver.execute_script("arguments[0].click();", bonus)
                 time.sleep(10)
-            except:
+                driver.switch_to.default_content()
+                driver.find_element(By.CSS_SELECTOR,
+                                    '#app > div.application-c8e1da.application_disable-nav-609602 > div.application__fixed-ae5951 > header > div.block-header__button-6fc6ab > svg').click()
+                time.sleep(1)
+                driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[3]/aside/div[4]/span').click()
+            except Exception as error:
+                print(error)
                 error += 1
                 with open('works/error_wheels.txt', 'a', encoding="UTF8") as f:
-                    f.write(f"{val.split(':')[0]}:{val.split(':')[1]}")
+                    f.write(f"{val.split(':')[0]}:{val.split(':')[1]}:{val.split(':')[2]}")
             finally:
                 try:
                     driver.close()
