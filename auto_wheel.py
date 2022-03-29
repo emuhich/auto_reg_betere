@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from chromedriver.locate import DRIVER_DIR
-from dolphin import start_dolphin_automation
+from dolphin import start_dolphin_automation, login_ligue, refactoring_profile
 
 
 def get_count_total():
@@ -46,30 +46,24 @@ def wheel():
                 time.sleep(1)
                 in_account = True
                 try:
-                    driver.find_element(By.CSS_SELECTOR,'#app > div.application-c8e1da > div.application__fixed-ae5951 > header > div.block-header__controls-ffdd12 > a.block-header__wallet-5ba961 > div')
+                    driver.find_element(By.CSS_SELECTOR,
+                                        '#app > div.application-c8e1da > div.application__fixed-ae5951 > header > div.block-header__controls-ffdd12 > a.block-header__wallet-5ba961 > div')
                 except:
                     in_account = False
                 if not in_account:
-                    login = WebDriverWait(driver, 30, 0.1, ).until(
+                    try:
+                        driver = login_ligue(driver, phone, password, version=True)
+                    except:
+                        driver = login_ligue(driver, phone, password, version=False)
+                    driver.get('https://m.ligastavok.ru/promo/fortune')
+                    WebDriverWait(driver, 30, 0.1, ).until(
                         EC.presence_of_element_located(
-                            (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
-                    login.click()
-                    time.sleep(1)
-                    phone_input = driver.find_element(By.XPATH,
-                                                      '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
-                    time.sleep(1)
-                    phone_input.click()
-                    phone_input.send_keys(phone)
-                    password_input = driver.find_element(By.XPATH,
-                                                         '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
-
-                    password_input.send_keys(password)
-
-                    driver.find_element(By.XPATH,
-                                        '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
-                    WebDriverWait(driver, 60, 0.1, ).until(
-                        EC.presence_of_element_located(
-                            (By.XPATH, '/html/body/div[1]/div[1]/div[3]/div')))
+                            (By.TAG_NAME, 'iframe')))
+                    d = driver.find_element(By.TAG_NAME, 'iframe')
+                    driver.switch_to.frame(d)
+                    bonus = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/button')
+                    driver.execute_script("arguments[0].click();", bonus)
+                    time.sleep(10)
                 driver.get('https://m.ligastavok.ru/promo/fortune')
                 WebDriverWait(driver, 30, 0.1, ).until(
                     EC.presence_of_element_located(
@@ -79,8 +73,9 @@ def wheel():
                 bonus = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/div[1]/button')
                 driver.execute_script("arguments[0].click();", bonus)
                 time.sleep(10)
-            except Exception as error:
-                print(error)
+                refactoring_profile(profile_id=profile_id, wheel=True)
+            except:
+                refactoring_profile(profile_id=profile_id, wheel=False)
                 error += 1
                 with open('works/error_wheels.txt', 'a', encoding="UTF8") as f:
                     f.write(f"{val.split(':')[0]}:{val.split(':')[1]}:{val.split(':')[2]}")

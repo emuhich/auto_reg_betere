@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from chromedriver.locate import DRIVER_DIR
-from dolphin import start_dolphin_automation
+from dolphin import start_dolphin_automation, login_ligue
 
 
 def get_list_total(url):
@@ -48,24 +48,10 @@ def open_ligue(acc_list):
     except:
         in_account = False
     if not in_account:
-        login = WebDriverWait(driver, 30, 0.1, ).until(
-            EC.presence_of_element_located(
-                (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
-        login.click()
-        time.sleep(1)
-        phone_input = driver.find_element(By.XPATH,
-                                          '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
-        time.sleep(1)
-        phone_input.click()
-        phone_input.send_keys(phone)
-        password_input = driver.find_element(By.XPATH,
-                                             '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
-
-        password_input.send_keys(password)
-
-        driver.find_element(By.XPATH,
-                            '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
-        time.sleep(8)
+        try:
+            driver = login_ligue(driver, phone, password, version=True)
+        except:
+            driver = login_ligue(driver, phone, password, version=False)
     driver.get('https://m.ligastavok.ru/' + url)
 
 

@@ -12,7 +12,7 @@ from vac_sms_api import check_balance, get_phone, bad_number
 import registration
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
-
+error_inn = 0
 
 def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
     """Получаем инн."""
@@ -148,6 +148,7 @@ def get_count_result():
 
 
 def main():
+    global error_inn
     log()
 
     menu = input(f"Выберите пункт.\n"
@@ -194,7 +195,7 @@ def main():
                     logging.error(error)
             ready = get_count_total()
             logging.debug(
-                f"Регистрация завершена, зарегистрировано:{ready}/{count}, ошибки инн: {registration.error_inn},"
+                f"Регистрация завершена, зарегистрировано:{ready}/{count}, ошибки инн: {error_inn},"
                 f" повторки: {acc_error}, другие ошибки: {other_errors}")
     elif menu == '2':
         logging.debug('Начало прокрутки, все аккаунты беруться из файла total.txt')

@@ -3,9 +3,13 @@ import logging
 import random
 import re
 import configparser
+import time
+from selenium.webdriver.support import expected_conditions as EC
 from fake_useragent import UserAgent
 
 import requests
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 
 from exeptions import NoString
 
@@ -124,3 +128,94 @@ def get_profile_id():
     except Exception:
         raise NoString("Кончились профиля в dolphin.txt")
     return profile_id
+
+
+def rename_profile(phone, password, profile_id):
+    url = f"https://anty-api.com/browser_profiles/{int(profile_id)}"
+
+    payload = json.dumps({
+        "name": f"{phone[1:]}:{password}",
+    })
+
+    headers = {
+        'Authorization': 'Bearer ' + TOKEN_DOLPHIN,
+        'Content-Type': 'application/json'
+    }
+
+    requests.request("PATCH", url, headers=headers, data=payload)
+
+
+def refactoring_profile(profile_id, wheel):
+    url = f"https://anty-api.com/browser_profiles/{int(profile_id)}"
+    if wheel:
+        payload = json.dumps({
+            "notes": {
+                "icon": "success",
+                "color": "green",
+                "style": 'text',
+                'content': '<p>Прокручено</p>'
+            }
+        })
+    else:
+        payload = json.dumps({
+            "notes": {
+                "icon": "error",
+                "color": "red",
+                "style": 'text',
+                'content': '<p>Ошибка прокрутки</p>'
+            }
+        })
+
+    headers = {
+        'Authorization': 'Bearer ' + TOKEN_DOLPHIN,
+        'Content-Type': 'application/json'
+    }
+
+    requests.request("PATCH", url, headers=headers, data=payload)
+
+
+def login_ligue(driver, phone, password, version):
+    if version:
+        login = WebDriverWait(driver, 10, 0.1, ).until(
+            EC.presence_of_element_located(
+                (By.XPATH, '/html/body/div[1]/div[1]/div[1]/header/div[3]/div/a[1]')))
+
+        login.click()
+        time.sleep(1)
+        phone_input = driver.find_element(By.XPATH,
+                                          '/html/body/div[1]/div[1]/div[3]/div[1]/div[2]/form/div[1]/input')
+        time.sleep(1)
+        phone_input.click()
+        phone_input.send_keys(phone)
+        password_input = driver.find_element(By.XPATH,
+                                             '/html/body/div[1]/div[1]/div[3]/div[1]/div[2]/form/div[2]/input')
+
+        password_input.send_keys(password)
+
+        driver.find_element(By.XPATH,
+                            '/html/body/div[1]/div[1]/div[3]/div[1]/div[2]/form/button').click()
+        time.sleep(1)
+        # WebDriverWait(driver, 60, 0.1, ).until(
+        #     EC.presence_of_element_located(
+        #         (By.XPATH, '/html/body/div[1]/div[1]/div[3]/div')))
+        return driver
+    else:
+        login = WebDriverWait(driver, 30, 0.1, ).until(
+            EC.presence_of_element_located(
+                (By.XPATH, '/html/body/div[1]/div[1]/div[2]/header/div[3]/div/a[1]')))
+        login.click()
+        time.sleep(1)
+        phone_input = driver.find_element(By.XPATH,
+                                          '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[1]/input')
+        time.sleep(1)
+        phone_input.click()
+        phone_input.send_keys(phone)
+        password_input = driver.find_element(By.XPATH,
+                                             '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/div[2]/input')
+
+        password_input.send_keys(password)
+
+        driver.find_element(By.XPATH,
+                            '/html/body/div[1]/div[1]/div[4]/div[1]/div[2]/form/button').click()
+        time.sleep(1)
+        return driver

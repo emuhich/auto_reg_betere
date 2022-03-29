@@ -14,13 +14,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from ProcessPool import NoDaemonProcessPool
 from chromedriver.locate import DRIVER_DIR
-from dolphin import start_dolphin_automation, get_profile_id
+from dolphin import start_dolphin_automation, get_profile_id, rename_profile
 from exeptions import AccountError, AccountErrorBettery
 from vac_sms_api import get_sms_code, bad_number, get_phone, again_sms
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
-
-error_inn = 0
 
 
 def password_generate():
@@ -52,16 +50,6 @@ def registration(acc):
     options = webdriver.ChromeOptions()
     options.add_argument('--disable-gpu')
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
-    options.add_experimental_option(
-        'prefs',
-        {
-            'profile.managed_default_content_settings.images': 2,
-            'profile.managed_default_content_settings.mixed_script': 2,
-            'profile.managed_default_content_settings.media_stream': 2,
-            'profile.managed_default_content_settings.stylesheets': 2
-        }
-    )
-
     driver = webdriver.Chrome(options=options, executable_path=f"{DRIVER_DIR}\chromedriver")
     driver.get('https://www.bettery.ru/account/registration/')
     phone_input = WebDriverWait(driver, 120, 0.1).until(
@@ -227,7 +215,6 @@ def registration_liga(acc):
     """Регистрация Лига ставок."""
     global code
     again_sms(acc['idNum'])
-    profile_id = get_profile_id()
     phone_number = acc['phone_number']
     idNum = acc['idNum']
     date_of_birth = acc['date_of_birth']
@@ -235,6 +222,8 @@ def registration_liga(acc):
     name = acc['name']
     surnames = acc['surnames']
     while True:
+        profile_id = get_profile_id()
+        rename_profile(password=str(password), phone=str(phone_number), profile_id=profile_id)
         port = start_dolphin_automation(int(profile_id))
         options = Options()
         options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
