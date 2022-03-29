@@ -14,6 +14,7 @@ import registration
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 error_inn = 0
 
+
 def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber):
     """Получаем инн."""
     docnumber = f'{docnumber[:2]} {docnumber[2:4]} {docnumber[4:10]}'

@@ -174,6 +174,18 @@ def refactoring_profile(profile_id, wheel):
     requests.request("PATCH", url, headers=headers, data=payload)
 
 
+def delete_profile(profile_id):
+    url = f"https://anty-api.com/browser_profiles/{int(profile_id)}"
+
+    payload = {}
+    headers = {
+        'Authorization': 'Bearer ' + TOKEN_DOLPHIN,
+        'Content-Type': 'application/json'
+    }
+
+    requests.request("DELETE", url, headers=headers, data=payload)
+
+
 def login_ligue(driver, phone, password, version):
     if version:
         login = WebDriverWait(driver, 10, 0.1, ).until(

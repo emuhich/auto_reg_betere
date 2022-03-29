@@ -1,7 +1,6 @@
 import logging
 import time
 
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -78,7 +77,7 @@ def wheel():
                 refactoring_profile(profile_id=profile_id, wheel=False)
                 error += 1
                 with open('works/error_wheels.txt', 'a', encoding="UTF8") as f:
-                    f.write(f"{val.split(':')[0]}:{val.split(':')[1]}:{val.split(':')[2]}")
+                    f.write(f"{phone}:{password}:{profile_id}")
             finally:
                 try:
                     driver.close()

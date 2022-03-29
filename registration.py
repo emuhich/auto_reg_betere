@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from ProcessPool import NoDaemonProcessPool
 from chromedriver.locate import DRIVER_DIR
-from dolphin import start_dolphin_automation, get_profile_id, rename_profile
+from dolphin import start_dolphin_automation, get_profile_id, rename_profile, delete_profile
 from exeptions import AccountError, AccountErrorBettery
 from vac_sms_api import get_sms_code, bad_number, get_phone, again_sms
 
@@ -232,6 +232,7 @@ def registration_liga(acc):
         driver.get('https://m.ligastavok.ru/promo/fortune?source=registration')
         if driver.current_url != 'https://m.ligastavok.ru/jackpot':
             break
+        delete_profile(profile_id=profile_id)
         driver.close()
         time.sleep(2)
     driver.get('https://m.ligastavok.ru/registration')
@@ -245,15 +246,6 @@ def registration_liga(acc):
     phone_input = driver.find_element(By.XPATH,
                                       '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/div/input')
     phone_input.send_keys(phone_number[1:])
-    # phone = ''
-    # while phone == '':
-    #     phone_input = driver.find_element(By.CSS_SELECTOR,
-    #                                       '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
-    #     time.sleep(1)
-    #     phone_input.send_keys(phone_number[1:])
-    #     phone_cheak = driver.find_element(By.CSS_SELECTOR,
-    #                                       '#app > div.application-c8e1da.application_disable-nav-609602 > div.registration-c64991 > div > form > div.registration__cell-558e5d > div > input')
-    #     phone = phone_cheak.get_attribute("value")
     time.sleep(1)
     code_proceed = driver.find_element(By.XPATH,
                                        '/html/body/div[1]/div[1]/div[4]/div/form/div[1]/button')
